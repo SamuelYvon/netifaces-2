@@ -10,38 +10,34 @@ use std::ptr::NonNull;
 use std::thread::sleep;
 use std::time::Duration;
 use windows::Win32::NetworkManagement::IpHelper;
+use windows::Win32::NetworkManagement::IpHelper::{IP_ADAPTER_INDEX_MAP, IP_ADAPTER_INFO};
 
 pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut interfaces = vec![];
-
-    let adapter_sz = size_of::<IpHelper::IP_ADAPTER_INFO>();
-    print!("Adapter size: {}", adapter_sz);
-    sleep(Duration::from_secs(5));
+    let mut buff_size = 0;
 
     unsafe {
-        let mut number = 1000;
-        // IpHelper::GetNumberOfInterfaces(&mut number);
+        // Get the length
+        IpHelper::GetInterfaceInfo(None, &mut buff_size);
 
-        print!("Before layout");
+        let layout = Layout::from_size_align_unchecked(buff_size as usize, 4);
+        let ptr = alloc(layout) as *mut IpHelper::IP_INTERFACE_INFO;
 
-        let layout = Layout::from_size_align_unchecked(adapter_sz * 10000usize, 1);
+        // Actually get data
+        IpHelper::GetInterfaceInfo(Some(ptr), &mut buff_size);
 
-        let ptr = alloc(layout) as *mut IpHelper::IP_ADAPTER_INFO;
-        print!("After layout");
+        let interface_count = (*ptr).NumAdapters as usize;
 
-        let mut adapter_count = 10000;
-        IpHelper::GetAdaptersInfo(Some(ptr), &mut adapter_count);
+        let ptr_to_data = ((ptr as *mut u8).offset(size_of::<i32>() as isize)) as *mut [IP_ADAPTER_INDEX_MAP; 1];
 
-        for i in 0..adapter_count {
-            let adapter_ptr: *mut IpHelper::IP_ADAPTER_INFO = ptr.offset(i.try_into().unwrap());
+        for i in 0..interface_count {
             let mut s = String::new();
 
-            // *adapter_ptr.Description
-            for c in (*adapter_ptr).Description {
-                if c.0 == b'\0' {
+            for c in (*ptr_to_data.offset(i as isize))[0].Name.iter() {
+                if *c == 0_u16 {
                     break;
                 }
-                s.push(c.0 as char);
+                s.push(char::from_u32(*c as u32).expect("u16=>u32 should have worked properly"));
             }
 
             interfaces.push(s);
