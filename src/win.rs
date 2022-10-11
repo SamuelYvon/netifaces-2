@@ -31,20 +31,14 @@ pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let ptr_to_data = ((ptr as *mut u8).offset(size_of::<i32>() as isize)) as *mut [IP_ADAPTER_INDEX_MAP; 1];
 
         for i in 0..interface_count {
-            let mut s = String::new();
-
-            for c in (*ptr_to_data.offset(i as isize))[0].Name.iter() {
-                if *c == 0_u16 {
-                    break;
-                }
-                s.push(char::from_u32(*c as u32).expect("u16=>u32 should have worked properly"));
-            }
-
+            let u16_data = *ptr_to_data.offset(i as isize)[0];
+            let s = String::from_utf16(u16_data)?;
             interfaces.push(s);
         }
 
         dealloc(ptr as *mut u8, layout);
     }
+
     Ok(interfaces)
 }
 
