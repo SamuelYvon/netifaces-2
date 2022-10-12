@@ -35,7 +35,10 @@ def ifaddresses(if_name: str) -> Addresses:
     :param if_name: the interface name
     :return a map of network addresses indexed by network address type. The values are the addresses, indexed by their roles
     """
-    return _ifaddresses(if_name)
+    if sys.platform.startswith("win"):
+        return _ifaddresses(f"{_WIN_TCPIP}{if_name}")
+    else:
+        return _ifaddresses(if_name)
 
 
 def _parse_route_file() -> GatewaysTable:
