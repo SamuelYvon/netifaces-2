@@ -2,7 +2,7 @@
 netifaces(2), netifaces reborn
 See https://github.com/SamuelYvon/netifaces-2
 """
-
+import sys
 from pathlib import Path
 from typing import List, cast
 
@@ -145,7 +145,7 @@ def ifaddresses(if_name: str) -> Addresses:
 def _parse_route_file() -> GatewaysTable:
     from .routes import routes_parse
 
-    route_content = _ROUTE_FILE.read_text()
+    route_content = _NIX_ROUTE_FILE.read_text()
     return routes_parse(route_content)
 
 
@@ -156,7 +156,7 @@ def gateways() -> GatewaysTable:
     :return a routing table
     """
 
-    if _ROUTE_FILE.exists():
+    if _NIX_ROUTE_FILE.exists():
         return _parse_route_file()
     else:
         raise NotImplementedError("No implementation for `gateways()` yet")
