@@ -1,19 +1,12 @@
+#![allow(dead_code)]
 use crate::ip_to_string;
-use crate::types::{
-    AddrPairs, IfAddrs, ADDR_ADDR, AF_ALG, AF_INET, AF_INET6, AF_NETLINK, AF_PACKET, AF_VSOCK,
-    BROADCAST_ADDR, MASK_ADDR, PEER_ADDR,
-};
-use std::alloc::{self, alloc, dealloc, Layout};
-use std::collections::{HashMap, HashSet};
-use std::ffi::OsString;
-use std::fmt::{Display, Error};
+use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, BROADCAST_ADDR, MASK_ADDR};
+use std::alloc::{alloc, dealloc, Layout};
+use std::collections::HashMap;
 use std::mem::size_of;
-use std::ptr::NonNull;
-use std::thread::sleep;
-use std::time::Duration;
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::NetworkManagement::IpHelper::{
-    IP_ADAPTER_INDEX_MAP, IP_ADAPTER_INFO, MIB_IPADDRROW_XP, MIB_IPADDRTABLE,
+    IP_ADAPTER_INDEX_MAP, MIB_IFROW, MIB_IFTABLE, MIB_IPADDRROW_XP, MIB_IPADDRTABLE,
 };
 
 const WIN_API_ALIGN: usize = 4;
@@ -21,6 +14,7 @@ const WIN_API_ALIGN: usize = 4;
 struct WinIface {
     index: u32,
     name: String,
+    phy_addr: [u8; 8],
 }
 
 fn string_from_w16(arr: &[u16]) -> String {
@@ -64,12 +58,11 @@ fn get_iface_index(iface_name: &str) -> Option<u32> {
         (*ptr).NumAdapters as usize
     };
 
-    let ptr_to_data = unsafe {
-        ((ptr as *mut u8).offset(size_of::<i32>() as isize)) as *mut [IP_ADAPTER_INDEX_MAP; 1]
-    };
+    let ptr_to_data =
+        unsafe { ((ptr as *mut u8).add(size_of::<i32>())) as *mut [IP_ADAPTER_INDEX_MAP; 1] };
 
     for i in 0..interface_count {
-        let iface = unsafe { *(ptr_to_data.offset(i as isize)) };
+        let iface = unsafe { *(ptr_to_data.add(i)) };
         let u16_data = iface[0].Name;
         let s = string_from_w16(&u16_data);
 
@@ -84,37 +77,53 @@ fn get_iface_index(iface_name: &str) -> Option<u32> {
     index
 }
 
-pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let mut interfaces = vec![];
-    let mut buff_size = 0;
+/// Return a vector of all windows interfaces detected by the system. This can be a fairly large
+/// amount. No filtering is done.
+fn windows_full_interfaces() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
+    let mut size = 0_u32;
 
-    unsafe {
-        // Get the length
-        IpHelper::GetInterfaceInfo(None, &mut buff_size);
+    unsafe { IpHelper::GetIfTable(None, &mut size, false) };
 
-        let layout = Layout::from_size_align_unchecked(buff_size as usize, WIN_API_ALIGN);
-        let ptr = alloc(layout) as *mut IpHelper::IP_INTERFACE_INFO;
+    let layout = Layout::from_size_align(size as usize, WIN_API_ALIGN)?;
 
-        // Actually get data
-        IpHelper::GetInterfaceInfo(Some(ptr), &mut buff_size);
+    let ptr = unsafe { alloc(layout) as *mut MIB_IFTABLE };
 
-        let interface_count = (*ptr).NumAdapters as usize;
+    unsafe { IpHelper::GetIfTable(Some(ptr), &mut size, false) };
 
-        let ptr_to_data =
-            ((ptr as *mut u8).offset(size_of::<i32>() as isize)) as *mut [IP_ADAPTER_INDEX_MAP; 1];
+    let num_entries = unsafe { (*ptr).dwNumEntries } as usize;
+    let raw_ptr = ptr as *mut u8;
+    let data_ptr = unsafe { raw_ptr.offset(size_of::<u32>().try_into()?) as *mut [MIB_IFROW; 1] };
 
-        for i in 0..interface_count {
-            let u16_data = (*(ptr_to_data.offset(i as isize)))[0].Name;
-            interfaces.push(string_from_w16(&u16_data));
-        }
+    let mut result_vec = vec![];
 
-        dealloc(ptr as *mut u8, layout);
+    for i in 0..num_entries {
+        let entry_ptr = unsafe { data_ptr.add(i) };
+        let entry = unsafe { (*entry_ptr)[0] };
+
+        let if_index = entry.dwIndex;
+        let u16_name = entry.wszName;
+        let phy_addr = entry.bPhysAddr;
+
+        let name = string_from_w16(&u16_name);
+
+        result_vec.push(WinIface {
+            index: if_index,
+            name,
+            phy_addr,
+        });
     }
 
-    Ok(interfaces)
+    Ok(result_vec)
 }
 
-fn ifaddresses_ipv4(if_addrs: &mut IfAddrs, if_index: u32) -> Result<(), Box<dyn std::error::Error>> {
+pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    windows_full_interfaces().map(|vec| vec.into_iter().map(|win_iface| win_iface.name).collect())
+}
+
+fn ifaddresses_ipv4(
+    if_addrs: &mut IfAddrs,
+    if_index: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Get the buff's size
     let mut size = 0;
     unsafe {
@@ -132,14 +141,14 @@ fn ifaddresses_ipv4(if_addrs: &mut IfAddrs, if_index: u32) -> Result<(), Box<dyn
     };
 
     // Deal w/it
-    let mut number_of_entries = unsafe { (*ptr).dwNumEntries as usize };
+    let number_of_entries = unsafe { (*ptr).dwNumEntries as usize };
 
-    let raw_ptr = unsafe { ((ptr as *mut u8).offset(size_of::<u32>() as isize)) as *mut u8 };
+    let raw_ptr = unsafe { ((ptr as *mut u8).add(size_of::<u32>())) as *mut u8 };
 
     let ip_addr_table_ptr = raw_ptr as *const [MIB_IPADDRROW_XP; 1];
 
     for i in 0..number_of_entries {
-        let row = unsafe { (*(ip_addr_table_ptr.offset(i as isize)))[0] };
+        let row = unsafe { (*(ip_addr_table_ptr.add(i)))[0] };
 
         let row_if_index = row.dwIndex;
         if row_if_index != if_index {
@@ -151,65 +160,8 @@ fn ifaddresses_ipv4(if_addrs: &mut IfAddrs, if_index: u32) -> Result<(), Box<dyn
         let subnet_mask = row.dwMask;
         let broad_addr = row.dwBCastAddr;
 
-        let mut ent = if_addrs.entry(AF_INET.into());
-        let mut addr_vec = ent.or_insert(vec![]);
-
-        addr_vec.push(HashMap::from([
-            (ADDR_ADDR.to_string(), ip_to_string(be_to_le(net_addr))),
-            (
-                BROADCAST_ADDR.to_string(),
-                ip_to_string(be_to_le(broad_addr)),
-            ),
-            (MASK_ADDR.to_string(), ip_to_string(be_to_le(subnet_mask))),
-        ]));
-    }
-
-    unsafe {
-        dealloc(ptr as *mut u8, layout);
-    };
-
-    Ok(())
-}
-
-fn ifaddresses_ipv6(if_addrs: &mut IfAddrs, if_index: u32) -> Result<(), Box<dyn std::error::Error>> {
-    // Get the buff's size
-    let mut size = 0;
-    unsafe {
-        IpHelper::GetAdaptersAddresses(None, &mut size, false);
-    }
-
-    // Create the layout
-    let layout = Layout::from_size_align(size as usize, WIN_API_ALIGN)?;
-
-    // Alloc
-    let ptr = unsafe {
-        let ptr = alloc(layout) as *mut MIB_IPADDRTABLE;
-        IpHelper::GetIpAddrTable(Some(ptr), &mut size, false);
-        ptr
-    };
-
-    // Deal w/it
-    let mut number_of_entries = unsafe { (*ptr).dwNumEntries as usize };
-
-    let raw_ptr = unsafe { ((ptr as *mut u8).offset(size_of::<u32>() as isize)) as *mut u8 };
-
-    let ip_addr_table_ptr = raw_ptr as *const [MIB_IPADDRROW_XP; 1];
-
-    for i in 0..number_of_entries {
-        let row = unsafe { (*(ip_addr_table_ptr.offset(i as isize)))[0] };
-
-        let row_if_index = row.dwIndex;
-        if row_if_index != if_index {
-            continue;
-        }
-
-        // all of the following are in network byte order (big end) by the API's spec
-        let net_addr = row.dwAddr;
-        let subnet_mask = row.dwMask;
-        let broad_addr = row.dwBCastAddr;
-
-        let mut ent = if_addrs.entry(AF_INET.into());
-        let mut addr_vec = ent.or_insert(vec![]);
+        let ent = if_addrs.entry(AF_INET.into());
+        let addr_vec = ent.or_insert(vec![]);
 
         addr_vec.push(HashMap::from([
             (ADDR_ADDR.to_string(), ip_to_string(be_to_le(net_addr))),
@@ -234,9 +186,7 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
     let if_index = get_iface_index(if_name)
         .ok_or_else(|| format!("The given interface name ({}) is not found", if_name))?;
 
-
     ifaddresses_ipv4(&mut if_addrs, if_index)?;
-    ifaddresses_ipv6(&mut if_addrs, if_index)?;
 
     Ok(if_addrs)
 }
