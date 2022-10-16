@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 
@@ -6,14 +7,18 @@ mod types;
 
 #[cfg(not(target_family = "windows"))]
 mod linux;
+
 #[cfg(not(target_family = "windows"))]
 use linux::{linux_ifaddresses as ifaddresses, linux_interfaces as interfaces};
 
 #[cfg(target_family = "windows")]
 mod win;
+
 #[cfg(target_family = "windows")]
 use win::{windows_ifaddresses as ifaddresses, windows_interfaces as interfaces};
 
+/// Given an u32 in little endian, return the String representation
+/// of it into the colloquial IPV4 string format
 pub fn ip_to_string(ip: u32) -> String {
     let mut s = String::new();
 
