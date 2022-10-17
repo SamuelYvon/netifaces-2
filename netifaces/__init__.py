@@ -22,7 +22,9 @@ def interfaces() -> List[InterfaceName]:
 
     if sys.platform.startswith("win"):
         return [
-            iface[len(_WIN_TCPIP):] for iface in _interfaces() if iface.startswith(_WIN_TCPIP)
+            iface[len(_WIN_TCPIP) :]
+            for iface in _interfaces()
+            if iface.startswith(_WIN_TCPIP)
         ]
     else:
         return _interfaces()

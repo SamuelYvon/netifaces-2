@@ -1,7 +1,9 @@
 #![allow(non_snake_case)]
 
+use std::fmt::Write;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
+use std::ops::Deref;
 
 mod types;
 
@@ -33,6 +35,21 @@ pub fn ip_to_string(ip: u32) -> String {
     }
 
     s
+}
+
+/// Given the bytes that makes up a mac address, return the String
+/// representation as it would be expected in the colloquial form.
+pub fn mac_to_string(mac: &[u8; 8]) -> String {
+    let mut s = String::new();
+
+    for i in 0..mac.len() {
+        write!(&mut s, "{:X?}", mac[i]).unwrap();
+        if i + 1 < mac.len() {
+            s.push_str(":");
+        }
+    }
+
+    return s;
 }
 
 #[pyfunction]
