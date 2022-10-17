@@ -186,7 +186,7 @@ fn ifaddresses_mac(
     if_addrs: &mut IfAddrs,
     if_index: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut all_ifaces = windows_full_interfaces()?;
+    let all_ifaces = windows_full_interfaces()?;
 
     let ifaces_with_index: Vec<WinIface> = all_ifaces
         .into_iter()
