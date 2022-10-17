@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
-use std::fmt::Write;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
+use std::fmt::Write;
 
 mod types;
 
