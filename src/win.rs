@@ -1,6 +1,7 @@
 #![allow(dead_code)]
-use crate::ip_to_string;
+
 use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, BROADCAST_ADDR, MASK_ADDR};
+use crate::{ip_to_string, mac_to_string};
 use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap;
 use std::mem::size_of;
@@ -8,6 +9,7 @@ use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::NetworkManagement::IpHelper::{
     IP_ADAPTER_INDEX_MAP, MIB_IFROW, MIB_IFTABLE, MIB_IPADDRROW_XP, MIB_IPADDRTABLE,
 };
+use windows::Win32::Networking::WinSock::AF_LINK;
 
 const WIN_API_ALIGN: usize = 4;
 
@@ -180,6 +182,28 @@ fn ifaddresses_ipv4(
     Ok(())
 }
 
+fn ifaddresses_mac(
+    if_addrs: &mut IfAddrs,
+    if_index: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut all_ifaces = windows_full_interfaces()?;
+
+    let ifaces_with_index: Vec<WinIface> = all_ifaces
+        .into_iter()
+        .filter(|iface| iface.index == if_index)
+        .collect();
+
+    let entry = if_addrs.entry(AF_LINK.into());
+    let macs = entry.or_insert(vec![]);
+
+    for iface in ifaces_with_index {
+        let m = HashMap::from([(ADDR_ADDR.to_string(), mac_to_string(&iface.phy_addr))]);
+        macs.push(m);
+    }
+
+    Ok(())
+}
+
 pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
     let mut if_addrs: IfAddrs = HashMap::new();
 
@@ -187,6 +211,7 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
         .ok_or_else(|| format!("The given interface name ({}) is not found", if_name))?;
 
     ifaddresses_ipv4(&mut if_addrs, if_index)?;
+    ifaddresses_mac(&mut if_addrs, if_index)?;
 
     Ok(if_addrs)
 }

@@ -128,7 +128,16 @@ def interfaces() -> List[InterfaceName]:
     :return the list of network interfaces that are available
     """
 
-    return cast(List[InterfaceName], _interfaces())
+    if sys.platform.startswith("win"):
+        result = cast(List[InterfaceName], [
+            iface[len(_WIN_TCPIP) :]
+            for iface in _interfaces()
+            if iface.startswith(_WIN_TCPIP)
+        ])
+    else:
+        result = cast(List[InterfaceName], _interfaces())
+            
+    return result
 
 
 def ifaddresses(if_name: str) -> Addresses:
