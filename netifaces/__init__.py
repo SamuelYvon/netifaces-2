@@ -6,7 +6,7 @@ See https://github.com/SamuelYvon/netifaces-2
 from pathlib import Path
 from typing import List, Optional
 
-from .defs import Addresses, DefaultGatewayEntry, GatewaysTable, InterfaceName
+from .defs import *
 from .netifaces import _ifaddresses, _interfaces
 
 _ROUTE_FILE = Path("/proc/net/route")
