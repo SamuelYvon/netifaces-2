@@ -2,14 +2,15 @@
 netifaces(2), netifaces reborn
 See https://github.com/SamuelYvon/netifaces-2
 """
-
+import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from .defs import *
 from .netifaces import _ifaddresses, _interfaces
 
-_ROUTE_FILE = Path("/proc/net/route")
+_WIN_TCPIP = "\\DEVICE\\TCPIP_"
+_NIX_ROUTE_FILE = Path("/proc/net/route")
 
 
 def interfaces() -> List[InterfaceName]:
@@ -19,7 +20,14 @@ def interfaces() -> List[InterfaceName]:
     :return the list of network interfaces that are available
     """
 
-    return _interfaces()
+    if sys.platform.startswith("win"):
+        return [
+            iface[len(_WIN_TCPIP) :]
+            for iface in _interfaces()
+            if iface.startswith(_WIN_TCPIP)
+        ]
+    else:
+        return _interfaces()
 
 
 def ifaddresses(if_name: str) -> Addresses:
@@ -29,13 +37,16 @@ def ifaddresses(if_name: str) -> Addresses:
     :param if_name: the interface name
     :return a map of network addresses indexed by network address type. The values are the addresses, indexed by their roles
     """
-    return _ifaddresses(if_name)
+    if sys.platform.startswith("win"):
+        return _ifaddresses(f"{_WIN_TCPIP}{if_name}")
+    else:
+        return _ifaddresses(if_name)
 
 
 def _parse_route_file() -> GatewaysTable:
     from .routes import routes_parse
 
-    route_content = _ROUTE_FILE.read_text()
+    route_content = _NIX_ROUTE_FILE.read_text()
     return routes_parse(route_content)
 
 
@@ -46,7 +57,7 @@ def gateways() -> GatewaysTable:
     :return a routing table
     """
 
-    if _ROUTE_FILE.exists():
+    if _NIX_ROUTE_FILE.exists():
         return _parse_route_file()
     else:
         raise NotImplementedError("No implementation for `gateways()` yet")
