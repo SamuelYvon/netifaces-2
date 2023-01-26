@@ -14,7 +14,7 @@ authors = [
     {name = "Samuel Yvon"}
 ]
 maintainers = [{name = "Samuel Yvon", email = "samuelyvon9@gmail.com" }]
-license = "MIT"
+license = {file = "LICENSE"}
 
 [build-system]
 requires = ["maturin>=0.13,<0.14"]
