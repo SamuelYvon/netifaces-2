@@ -1,5 +1,7 @@
 from enum import IntEnum
-from typing import Dict, List, Literal, Tuple, Union
+from typing import Dict, List, Tuple, Union
+
+from typing_extensions import Literal
 
 AF_UNSPEC = 0
 AF_UNIX = 1
