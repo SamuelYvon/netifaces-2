@@ -6,76 +6,151 @@ on:
       - dev
       - master
   pull_request:
+    branches:
       - dev
 
 jobs:
 
   lint-check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: pip install -U pip maturin
       - run: pip install .[dev]
       - run: ./hooks/pre-commit
 
   linux:
-    runs-on: ubuntu-latest
+    name: Build Linux wheels
     needs: [ lint-check ]
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: messense/maturin-action@v1
       with:
-        manylinux: auto
+        manylinux: 2_28
+        target: x86_64
         command: build
-        args: --release --sdist -o dist --find-interpreter
+        args: --release --sdist -o dist
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: dist
+
+  linux-cross:
+    name: Build Linux wheels
+    needs: [ lint-check ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [s390x, ppc64le, aarch64]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: messense/maturin-action@v1
+      with:
+        manylinux: 2_28
+        target: ${{ matrix.target }}
+        # workaround for PyO3/maturin-action/issues/137
+        container: ghcr.io/rust-cross/manylinux_2_28-cross:${{ matrix.target }}
+        command: build
+        args: --release -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: dist
+
+  linux-musl:
+    name: Build Linux musl wheels
+    needs: [ lint-check ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64, i686, armv7l]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: messense/maturin-action@v1
+      with:
+        manylinux: musllinux_1_1
+        target: ${{ matrix.target }}
+        command: build
+        args: --release -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: dist
+
+  linux-legacy:
+    name: Build Linux legacy wheels
+    needs: [ lint-check ]
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        target: [x86_64, s390x, ppc64le]
+    steps:
+    - uses: actions/checkout@v3
+    # TODO: Figure out a smarter way to do this
+    - run: sed -e "s/requires-python = \">=3.7\"/requires-python = \">=3.6\"/g" -i pyproject.toml
+    - run: sed -e "s/, \"abi3-py37\"//g" -i Cargo.toml
+    - run: sed -e "s/0.17.1/0.15.2/g" -i Cargo.toml
+    - uses: messense/maturin-action@v1
+      with:
+        maturin-version: v0.12.20
+        manylinux: 2014
+        target: ${{ matrix.target }}
+        command: build
+        args: --release -o dist -i python3.6
+    - name: Upload wheels
+      uses: actions/upload-artifact@v3
       with:
         name: wheels
         path: dist
 
   windows:
-    runs-on: windows-latest
+    name: Build Windows wheels
     needs: [ lint-check ]
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
     - uses: messense/maturin-action@v1
       with:
         command: build
-        args: --release -o dist --find-interpreter
+        args: --release -o dist
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: wheels
         path: dist
 
   macos:
-    runs-on: macos-latest
+    name: Build MacOS wheels
     needs: [ lint-check ]
+    runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
     - uses: messense/maturin-action@v1
       with:
         command: build
-        args: --release -o dist --universal2 --find-interpreter
+        args: --release -o dist --universal2
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: wheels
         path: dist
 
   release:
-    name: Release
+    needs: [ macos, windows, linux, linux-cross, linux-musl ]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
-    needs: [ macos, windows, linux ]
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: wheels
-      - name: Publish to PyPI
-        uses: messense/maturin-action@v1
-        env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1
         with:
-          command: upload
-          args: --skip-existing *
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

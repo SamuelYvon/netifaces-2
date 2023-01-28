@@ -62,8 +62,14 @@ route is set.
 
 ## 4. Platform support
 
-For now, I target Linux and MacOS, with Windows support expected in version >=2.0.0. The minimum python
-version you can use is Python 3.5. The linux target for python is `manylinux2014`.
+### Wheels
+Building Linux, Windows and macOS cp37-abi3 wheels (requires Python 3.7 and newer)  
+Install using pip:  
+`python -m pip install netifaces2`
+
+#### Linux  
+Targeting manylinux_2_28 (requires pip>=20.3)  
+Building also cp36m-manylinux2014 wheels for distros using Python 3.6
 
 ## 5. License
 

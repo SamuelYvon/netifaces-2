@@ -1,31 +1,47 @@
 [project]
 name = "netifaces2"
+description = "Portable network interface information"
 version = "0.0.12"
-requires-python = ">=3.5"
+requires-python = ">=3.7"
+readme = "README.md"
+license = {file = "LICENSE"}
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: System :: Networking"
 ]
-homepage = "https://github.com/SamuelYvon/netifaces-2"
-repository = "https://github.com/SamuelYvon/netifaces-2"
 authors = [
-    {email = "samuelyvon9@gmail.com"},
-    {name = "Samuel Yvon"}
+    { name = "Samuel Yvon", email = "samuelyvon9@gmail.com" }
 ]
-maintainers = [{name = "Samuel Yvon", email = "samuelyvon9@gmail.com" }]
-license = {file = "LICENSE"}
+maintainers = [
+    { name = "Samuel Yvon", email = "samuelyvon9@gmail.com" }
+]
+
+[project.urls]
+homepage = "https://github.com/SamuelYvon/netifaces-2"
+issues = "https://github.com/SamuelYvon/netifaces-2/issues"
+
+[project.optional-dependencies]
+dev = [
+    "mypy >= 0.981",
+    "black >= 22.10.0",
+    "isort >= 5.10.1",
+]
 
 [build-system]
-requires = ["maturin>=0.13,<0.14"]
+requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
-
-[tool.isort]
-profile = "black"
 
 [tool.maturin]
 bindings = "pyo3"
-compatibility = "manylinux2014"
+
+[tool.isort]
+profile = "black"
 
 [[tool.mypy.overrides]]
 module="rs_netifaces"
@@ -34,13 +50,3 @@ ignore_missing_imports=true
 [[tool.mypy.overrides]]
 module="netifaces.netifaces"
 ignore_missing_imports=true
-
-[project.optional-dependencies]
-dev = [
-    "mypy >= 0.981",
-    "black >= 22.10.0",
-    "isort >= 5.10.1"
-]
-
-
-
