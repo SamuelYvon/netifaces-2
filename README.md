@@ -3,7 +3,7 @@
 ## 1. What is this?
 
 The original [netifaces](https://github.com/al45tair/netifaces) was abandonned by it's maintainer,
-leaving us without the option to get network addresses of any kind in Python. Unfortunately, the 
+leaving us without the option to get network addresses of any kind in Python. Unfortunately, the
 original sources are more akin to arcane magic, so picking where it's been left off is a difficult
 task.
 
@@ -48,7 +48,7 @@ Import:
 
 ### `gateways`
 
-The `gateways` function does not support indexing through the `default` special key. This is because it makes a 
+The `gateways` function does not support indexing through the `default` special key. This is because it makes a
 sane typing definition difficult to write and be understandable. Instead, if you want the same functionality,
 the following is exposed:
 

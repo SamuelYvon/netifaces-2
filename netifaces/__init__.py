@@ -4,9 +4,9 @@ See https://github.com/SamuelYvon/netifaces-2
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-from .defs import *
+from .defs import Addresses, DefaultGatewayEntry, GatewaysTable, InterfaceName
 from .netifaces import _ifaddresses, _interfaces
 
 _ROUTE_FILE = Path("/proc/net/route")
@@ -27,7 +27,8 @@ def ifaddresses(if_name: str) -> Addresses:
     List the network addresses for the given interface
 
     :param if_name: the interface name
-    :return a map of network addresses indexed by network address type. The values are the addresses, indexed by their roles
+    :return a map of network addresses indexed by network address type.
+    The values are the addresses, indexed by their roles
     """
     return _ifaddresses(if_name)
 
