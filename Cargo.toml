@@ -8,8 +8,9 @@ edition = "2021"
 name = "netifaces"
 crate-type = ["cdylib"]
 
-[dependencies]
-pyo3 = { version = "0.17.1", features = ["extension-module"] }
+[dependencies.pyo3]
+version = "0.17.1"
+features = ["extension-module", "abi3-py37"]
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.42.0", features = [
