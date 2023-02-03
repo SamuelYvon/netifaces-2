@@ -12,13 +12,12 @@ on:
 jobs:
 
   lint-check:
-    name: Check
+    name: Run pre-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: pip install -U pip maturin
-      - run: pip install .[dev]
-      - run: ./hooks/pre-commit
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+    - uses: pre-commit/action@v3.0.0
 
   linux:
     name: Build Linux wheels
