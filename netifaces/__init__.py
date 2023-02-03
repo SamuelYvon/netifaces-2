@@ -4,7 +4,7 @@ See https://github.com/SamuelYvon/netifaces-2
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, cast
 
 from .defs import Addresses, DefaultGatewayEntry, GatewaysTable, InterfaceName
 from .netifaces import _ifaddresses, _interfaces
@@ -19,7 +19,7 @@ def interfaces() -> List[InterfaceName]:
     :return the list of network interfaces that are available
     """
 
-    return _interfaces()
+    return cast(List[InterfaceName], _interfaces())
 
 
 def ifaddresses(if_name: str) -> Addresses:
@@ -30,7 +30,7 @@ def ifaddresses(if_name: str) -> Addresses:
     :return a map of network addresses indexed by network address type.
     The values are the addresses, indexed by their roles
     """
-    return _ifaddresses(if_name)
+    return cast(Addresses, _ifaddresses(if_name))
 
 
 def _parse_route_file() -> GatewaysTable:

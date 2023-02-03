@@ -47,6 +47,7 @@ bindings = "pyo3"
 [tool.mypy]
 python_version = "3.6"
 exclude = ['venv/.*/*\.py$']
+strict=true
 
 [[tool.mypy.overrides]]
 module = 'netifaces.netifaces'
