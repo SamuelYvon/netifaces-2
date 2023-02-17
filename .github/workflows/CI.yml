@@ -22,12 +22,12 @@ jobs:
   linux:
     name: Build Linux wheels
     needs: [ lint-check ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
     - uses: messense/maturin-action@v1
       with:
-        manylinux: 2_28
+        manylinux: 2_17
         target: x86_64
         command: build
         args: --release --sdist -o dist
@@ -40,18 +40,16 @@ jobs:
   linux-cross:
     name: Build Linux wheels
     needs: [ lint-check ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        target: [s390x, ppc64le, aarch64]
+        target: [i686, s390x, ppc64, ppc64le, aarch64, armv7l]
     steps:
     - uses: actions/checkout@v3
     - uses: messense/maturin-action@v1
       with:
-        manylinux: 2_28
+        manylinux: 2_17
         target: ${{ matrix.target }}
-        # workaround for PyO3/maturin-action/issues/137
-        container: ghcr.io/rust-cross/manylinux_2_28-cross:${{ matrix.target }}
         command: build
         args: --release -o dist
     - name: Upload wheels
@@ -97,7 +95,7 @@ jobs:
     - uses: messense/maturin-action@v1
       with:
         maturin-version: v0.12.20
-        manylinux: 2014
+        manylinux: 2_17
         target: ${{ matrix.target }}
         command: build
         args: --release -o dist -i python3.6
