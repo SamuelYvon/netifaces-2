@@ -7,7 +7,7 @@ leaving us without the option to get network addresses of any kind in Python. Un
 original sources are more akin to arcane magic, so picking where it's been left off is a difficult
 task.
 
-I decided to rewrite `netifaces`, keeping the **almost exact same API** but adding the following:
+I decided to rewrite `netifaces`, keeping the **almost** exact same API and adding the following:
 
 - Support for future python versions
 - Type annotations
@@ -59,6 +59,19 @@ the following is exposed:
 
 The result will be the default gateway for each interface type. The result may be an empty dict if no default
 route is set.
+
+### `AF_` Constants
+
+In the previous version of `netifaces` the `AF_` constants' value were assigned
+to be platform independent. This has the nice effect of abstracting the OS when
+accessing the information of a network layer. However after consideration, it
+does not feel like the right place to provide abstraction. If you update your
+project's dependencies to this version of `netifaces`, be wary of this change.
+For instance, on linux you may need to replace `AF_LINK` with `AF_PACKET` to get
+mac addresses.
+
+In the future, an extra API will allow accessing a specific layer's information
+by querying for it, without using the platform's constant.
 
 ## 4. Platform support
 
