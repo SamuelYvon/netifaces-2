@@ -22,8 +22,6 @@ guarantee anything.
 - The `gateways` API is only working if your system has a `/proc/net/route` file
 - The `windows` API is non-functional
 
-The following section is taken from the origin netifaces:
-
 ## 2. Usage
 
 For now the API is the same as the original `netifaces`, so please refer to [it](https://github.com/al45tair/netifaces).
@@ -81,8 +79,9 @@ Install using pip:
 `python -m pip install netifaces2`
 
 #### Linux  
-Targeting manylinux_2_28 (requires pip>=20.3)  
-Building also cp36m-manylinux2014 wheels for distros using Python 3.6
+Linux cp37-abi3 wheels are built on manylinux2_17 aka manylinux2014 and require pip>=19.3  
+cp36m-manylinux2_17 wheels are unsupported and are being built only as a fallback
+for systems with only Python 3.6 available.
 
 ## 5. License
 
