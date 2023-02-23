@@ -39,13 +39,13 @@ dev = [
 ]
 
 [tool.black]
-target-version = ["py311", "py310", "py39", "py38", "py37", "py36"]
+target-version = ["py311", "py310", "py39", "py38", "py37"]
 
 [tool.maturin]
 bindings = "pyo3"
 
 [tool.mypy]
-python_version = "3.6"
+python_version = "3.7"
 exclude = ['venv/.*/*\.py$']
 strict=true
 
@@ -64,4 +64,8 @@ select = [
   "W", # pycodestyle
   "RUF", # ruff
   "I", # isort
+  "PT",   # flake8-pytest-style
 ]
+
+[tool.coverage.report]
+omit = ["_test.py"]
