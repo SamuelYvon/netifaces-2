@@ -118,7 +118,8 @@ __all__ = [
 ]
 
 
-_ROUTE_FILE = Path("/proc/net/route")
+_WIN_TCPIP = "\\DEVICE\\TCPIP_"
+_NIX_ROUTE_FILE = Path("/proc/net/route")
 
 
 def interfaces() -> List[InterfaceName]:
@@ -129,14 +130,17 @@ def interfaces() -> List[InterfaceName]:
     """
 
     if sys.platform.startswith("win"):
-        result = cast(List[InterfaceName], [
-            iface[len(_WIN_TCPIP) :]
-            for iface in _interfaces()
-            if iface.startswith(_WIN_TCPIP)
-        ])
+        result = cast(
+            List[InterfaceName],
+            [
+                iface[len(_WIN_TCPIP) :]
+                for iface in _interfaces()
+                if iface.startswith(_WIN_TCPIP)
+            ],
+        )
     else:
         result = cast(List[InterfaceName], _interfaces())
-            
+
     return result
 
 
@@ -148,7 +152,7 @@ def ifaddresses(if_name: str) -> Addresses:
     :return a map of network addresses indexed by network address type.
     The values are the addresses, indexed by their roles
     """
-    
+
     if sys.platform.startswith("win"):
         result = _ifaddresses(f"{_WIN_TCPIP}{if_name}")
     else:
@@ -175,8 +179,6 @@ def gateways() -> GatewaysTable:
         return _parse_route_file()
     else:
         raise NotImplementedError("No implementation for `gateways()` yet")
-
-    return {}
 
 
 def default_gateway() -> DefaultGatewayEntry:
