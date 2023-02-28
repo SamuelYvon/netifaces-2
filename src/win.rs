@@ -105,6 +105,9 @@ fn windows_full_interfaces() -> Result<Vec<WinIface>, Box<dyn std::error::Error>
         let if_index = entry.dwIndex;
         let u16_name = entry.wszName;
         let phy_addr = entry.bPhysAddr;
+        let type = entry.dwType;
+
+        print!("Type of interface is: {type}");
 
         let name = string_from_w16(&u16_name);
 
