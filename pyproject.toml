@@ -35,7 +35,8 @@ Issues = "https://github.com/SamuelYvon/netifaces-2/issues"
 dev = [
   "mypy >= 0.991",
   "black >= 23.1.0",
-  "ruff >= 0.0.240"
+  "ruff >= 0.0.240",
+  "pytest >= 7.1.1"
 ]
 
 [tool.black]
