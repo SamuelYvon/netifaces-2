@@ -20,7 +20,7 @@ def test_has_ipv4_or_ipv6() -> None:
     assert has_any_ip, "Test failure; no AF_INET address of any kind found"
 
 
-def test_has_link_layer():
+def test_has_link_layer() -> None:
     has_any_link = False
 
     for interface in netifaces.interfaces():
