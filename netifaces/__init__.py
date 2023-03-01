@@ -117,8 +117,6 @@ __all__ = [
     "AF_MAX",
 ]
 
-
-_WIN_TCPIP = "\\DEVICE\\TCPIP_"
 _NIX_ROUTE_FILE = Path("/proc/net/route")
 
 
@@ -129,19 +127,7 @@ def interfaces() -> List[InterfaceName]:
     :return the list of network interfaces that are available
     """
 
-    if sys.platform.startswith("win"):
-        result = cast(
-            List[InterfaceName],
-            [
-                iface[len(_WIN_TCPIP) :]
-                for iface in _interfaces()
-                if iface.startswith(_WIN_TCPIP)
-            ],
-        )
-    else:
-        result = cast(List[InterfaceName], _interfaces())
-
-    return result
+    return cast(List[InterfaceName], _interfaces())
 
 
 def ifaddresses(if_name: str) -> Addresses:
@@ -153,12 +139,7 @@ def ifaddresses(if_name: str) -> Addresses:
     The values are the addresses, indexed by their roles
     """
 
-    if sys.platform.startswith("win"):
-        result = _ifaddresses(f"{_WIN_TCPIP}{if_name}")
-    else:
-        result = _ifaddresses(if_name)
-
-    return cast(Addresses, result)
+    return _ifaddresses(if_name)
 
 
 def _parse_route_file() -> GatewaysTable:
