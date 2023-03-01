@@ -127,6 +127,18 @@ jobs:
       with:
         command: build
         args: --release -o dist
+    - uses: actions/setup-python@v4
+      with:
+        python-version: |
+          3.7
+          3.8
+          3.9
+          3.10
+          3.11
+    - name: Test wheels
+      run: |
+        pip install nox
+        nox
     - name: Upload wheels
       uses: actions/upload-artifact@v3
       with:

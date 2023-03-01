@@ -23,7 +23,7 @@ fn add_to_types_mat(
     af_class: u8,
     addr: &dyn Display,
     class: &str,
-    types_mat: &mut HashMap<u32, Vec<AddrPairs>>,
+    types_mat: &mut HashMap<i32, Vec<AddrPairs>>,
     any: &mut bool,
 ) {
     let e = types_mat.entry(af_class.into()).or_insert_with(Vec::new);
@@ -38,7 +38,7 @@ fn add_to_types_mat(
 }
 
 pub fn linux_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
-    let mut types_mat: HashMap<u32, Vec<AddrPairs>> = HashMap::new();
+    let mut types_mat: HashMap<i32, Vec<AddrPairs>> = HashMap::new();
     let if_addrs = nix::ifaddrs::getifaddrs()?;
 
     for if_addr in if_addrs {

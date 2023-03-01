@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 
 pub type AddrPairs = HashMap<String, String>;
-pub type IfAddrs = HashMap<u32, Vec<AddrPairs>>;
+pub type IfAddrs = HashMap<i32, Vec<AddrPairs>>;
 
 pub const ADDR_ADDR: &str = "addr";
 pub const MASK_ADDR: &str = "mask";

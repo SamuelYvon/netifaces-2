@@ -58,6 +58,10 @@ the following is exposed:
 The result will be the default gateway for each interface type. The result may be an empty dict if no default
 route is set.
 
+The level of completness differs a little bit with the original version; some address families might not yet
+be available and `PEER` addresses are not reported for now. If you need a feature, open an issue and I will
+do my best to add it.
+
 ### `AF_` Constants
 
 In the previous version of `netifaces` the `AF_` constants' value were assigned

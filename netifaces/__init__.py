@@ -2,7 +2,6 @@
 netifaces(2), netifaces reborn
 See https://github.com/SamuelYvon/netifaces-2
 """
-
 from pathlib import Path
 from typing import List, cast
 
@@ -29,6 +28,7 @@ from .defs import (
     AF_IUCV,
     AF_KCM,
     AF_KEY,
+    AF_LINK,
     AF_LLC,
     AF_LOCAL,
     AF_MAX,
@@ -115,10 +115,10 @@ __all__ = [
     "AF_XDP",
     "AF_MCTP",
     "AF_MAX",
+    "AF_LINK",
 ]
 
-
-_ROUTE_FILE = Path("/proc/net/route")
+_NIX_ROUTE_FILE = Path("/proc/net/route")
 
 
 def interfaces() -> List[InterfaceName]:
@@ -139,13 +139,14 @@ def ifaddresses(if_name: str) -> Addresses:
     :return a map of network addresses indexed by network address type.
     The values are the addresses, indexed by their roles
     """
+
     return cast(Addresses, _ifaddresses(if_name))
 
 
 def _parse_route_file() -> GatewaysTable:
     from .routes import routes_parse
 
-    route_content = _ROUTE_FILE.read_text()
+    route_content = _NIX_ROUTE_FILE.read_text()
     return routes_parse(route_content)
 
 
@@ -156,12 +157,10 @@ def gateways() -> GatewaysTable:
     :return a routing table
     """
 
-    if _ROUTE_FILE.exists():
+    if _NIX_ROUTE_FILE.exists():
         return _parse_route_file()
     else:
         raise NotImplementedError("No implementation for `gateways()` yet")
-
-    return {}
 
 
 def default_gateway() -> DefaultGatewayEntry:

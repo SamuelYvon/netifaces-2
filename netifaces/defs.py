@@ -52,6 +52,7 @@ AF_SMC = 43
 AF_XDP = 44
 AF_MCTP = 45
 AF_MAX = 46
+AF_LINK = -1000  # Windows Link Layer as defined by netifaces(1)
 
 
 class InterfaceType(IntEnum):
@@ -104,6 +105,7 @@ class InterfaceType(IntEnum):
     AF_XDP = AF_XDP
     AF_MCTP = AF_MCTP
     AF_MAX = AF_MAX
+    AF_LINK = AF_LINK
 
 
 InterfaceName = str
