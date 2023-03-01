@@ -27,6 +27,7 @@ def test_has_link_layer() -> None:
         address_table = netifaces.ifaddresses(interface)
 
         has_any_link |= netifaces.AF_PACKET in address_table
+        has_any_link |= netifaces.AF_LINK in address_table
 
         if has_any_link:
             break
