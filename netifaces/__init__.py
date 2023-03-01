@@ -28,6 +28,7 @@ from .defs import (
     AF_IUCV,
     AF_KCM,
     AF_KEY,
+    AF_LINK,
     AF_LLC,
     AF_LOCAL,
     AF_MAX,
@@ -114,6 +115,7 @@ __all__ = [
     "AF_XDP",
     "AF_MCTP",
     "AF_MAX",
+    "AF_LINK",
 ]
 
 _NIX_ROUTE_FILE = Path("/proc/net/route")
