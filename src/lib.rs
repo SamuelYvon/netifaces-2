@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+extern crate core;
+
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use std::fmt::Write;

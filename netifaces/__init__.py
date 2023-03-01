@@ -2,7 +2,6 @@
 netifaces(2), netifaces reborn
 See https://github.com/SamuelYvon/netifaces-2
 """
-import sys
 from pathlib import Path
 from typing import List, cast
 
@@ -139,7 +138,7 @@ def ifaddresses(if_name: str) -> Addresses:
     The values are the addresses, indexed by their roles
     """
 
-    return _ifaddresses(if_name)
+    return cast(Addresses, _ifaddresses(if_name))
 
 
 def _parse_route_file() -> GatewaysTable:
