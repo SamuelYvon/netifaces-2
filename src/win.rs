@@ -12,9 +12,8 @@ use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::NetworkManagement::IpHelper::IP_ADAPTER_INFO;
 use windows::Win32::NetworkManagement::IpHelper::IP_ADDR_STRING;
 
-use windows::Win32::Networking::WinSock::AF_LINK;
-
 const WIN_API_ALIGN: usize = 4;
+const AF_LINK: i32 = -1000;
 
 struct WinIpInfo {
     ip_address: String,
