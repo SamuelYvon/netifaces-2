@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "netifaces2"
 description = "Portable network interface information"
-version = "0.0.15"
+version = "0.0.16"
 requires-python = ">=3.7"
 readme = "README.md"
 license = {file = "LICENSE"}

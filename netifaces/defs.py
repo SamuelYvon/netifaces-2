@@ -110,7 +110,10 @@ class InterfaceType(IntEnum):
 
 InterfaceName = str
 AddressType = Union[
-    Literal["addr"], Literal["peer"], Literal["netmask"], Literal["broadcast"]
+    Literal["addr"],
+    Literal["peer"],
+    Literal["mask"],
+    Literal["broadcast"],
 ]
 Address = str
 
