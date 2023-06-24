@@ -19,7 +19,7 @@ guarantee anything.
 
 ### 1.1 What is not working **right-now**
 
-- The `gateways` API is only working if your system has a `/proc/net/route` file
+- The `gateways` API is only working if your system has a `/proc/net/route` file or the `ip` tool
 - The `windows` gateways API is non-functional
 
 ## 2. Usage
@@ -55,12 +55,19 @@ the following is exposed:
     ...
 ```
 
-The result will be the default gateway for each interface type. The result may be an empty dict if no default
-route is set.
+The result will be the default gateway for each interface type. The result may
+be an empty dict if no default route is set.
 
-The level of completness differs a little bit with the original version; some address families might not yet
-be available and `PEER` addresses are not reported for now. If you need a feature, open an issue and I will
-do my best to add it.
+The level of completness differs a little bit with the original version; some
+address families might not yet be available and `PEER` addresses are not
+reported for now. If you need a feature, open an issue and I will do my best to
+add it.
+
+Gateways also returned the interfaces indexed by integer values. This is a bit
+odd (IMO) since the integers values for the interface types are
+system-dependent. Enum values with a more semantic meaning are now used (they
+        are still tied to linux numbers), but you can use `old_api=True` in
+their call to get the al45air-style keys back.
 
 ### `AF_` Constants
 
