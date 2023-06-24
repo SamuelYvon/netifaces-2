@@ -120,6 +120,6 @@ Address = str
 Addresses = Dict[InterfaceType, List[Dict[AddressType, Address]]]
 
 GatewayEntry = Union[Tuple[str, str], Tuple[str, str, bool]]
-GatewaysTable = Dict[InterfaceType, List[GatewayEntry]]
+GatewaysTable = Dict[Union[InterfaceType, int], List[GatewayEntry]]
 
-DefaultGatewayEntry = Dict[InterfaceType, Tuple[str, str]]
+DefaultGatewayEntry = Dict[Union[InterfaceType, int], Tuple[str, str]]

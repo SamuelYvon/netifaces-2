@@ -19,7 +19,7 @@ GATEWAY = "Gateway"
 NIL_ADDR = "0" * 8
 
 
-def routes_parse_ip_tool(ip_tool_path: str) -> GatewaysTable:
+def routes_parse_ip_tool(ip_tool_path: str, old_api: bool = False) -> GatewaysTable:
     ipv4_query = subprocess.run([ip_tool_path, "r"], capture_output=True)
     ipv6_query = subprocess.run([ip_tool_path, "-6", "r"], capture_output=True)
 
@@ -51,14 +51,14 @@ def routes_parse_ip_tool(ip_tool_path: str) -> GatewaysTable:
             gateway_ip = gateway_ip_with_mask.split("/")[0]
             iface = cols[4]
 
-            table[if_type].append(
+            table[if_type.value if old_api else if_type].append(
                 (gateway_ip, iface, True) if default else (gateway_ip, iface)
             )
 
     return dict(table)
 
 
-def routes_parse_file(content: str) -> GatewaysTable:
+def routes_parse_file(content: str, old_api: bool = False) -> GatewaysTable:
     lined = content.splitlines()
 
     if len(lined) == 0:
@@ -89,7 +89,7 @@ def routes_parse_file(content: str) -> GatewaysTable:
         default = destination == NIL_ADDR
 
         gateway_as_string = ".".join(_ip_to_string(int(gateway, 16)).split(".")[::-1])
-        table[type].append(
+        table[type.value if old_api else type].append(
             (gateway_as_string, iface, True) if default else (gateway_as_string, iface)
         )
 

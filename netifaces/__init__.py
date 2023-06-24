@@ -166,7 +166,7 @@ def _ip_tool_path() -> Optional[str]:
     return ip
 
 
-def gateways() -> GatewaysTable:
+def gateways(old_api: bool = False) -> GatewaysTable:
     """
     Get the routing table indexed by interface type
 
@@ -179,17 +179,17 @@ def gateways() -> GatewaysTable:
         from .routes import routes_parse_ip_tool
 
         logging.debug("Using ip tool")
-        return routes_parse_ip_tool(ip_tool_path)
+        return routes_parse_ip_tool(ip_tool_path, old_api=old_api)
     elif _NIX_ROUTE_FILE.exists():
         from .routes import routes_parse_file
 
         logging.debug("Using route file")
-        return routes_parse_file(_NIX_ROUTE_FILE.read_text())
+        return routes_parse_file(_NIX_ROUTE_FILE.read_text(), old_api=old_api)
     else:
         raise NotImplementedError("No implementation for `gateways()` yet")
 
 
-def default_gateway() -> DefaultGatewayEntry:
+def default_gateway(old_api: bool = False) -> DefaultGatewayEntry:
     """
     Get the default gateway for each interface type
 
@@ -198,7 +198,7 @@ def default_gateway() -> DefaultGatewayEntry:
 
     default_table: DefaultGatewayEntry = {}
 
-    for if_type, list_of_tuples in gateways().items():
+    for if_type, list_of_tuples in gateways(old_api=old_api).items():
         for gateway_ip, if_name, *rest in list_of_tuples:
             if len(rest) > 0 and rest[0]:
                 default_table.update({if_type: (gateway_ip, if_name)})
