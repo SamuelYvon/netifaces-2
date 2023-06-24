@@ -2,66 +2,30 @@
 netifaces(2), netifaces reborn
 See https://github.com/SamuelYvon/netifaces-2
 """
+import logging
+import subprocess
+import sys
 from pathlib import Path
-from typing import List, cast
+from typing import List, Optional, cast
 
-from .defs import (
-    AF_ALG,
-    AF_APPLETALK,
-    AF_ASH,
-    AF_ATMPVC,
-    AF_ATMSVC,
-    AF_AX25,
-    AF_BLUETOOTH,
-    AF_BRIDGE,
-    AF_CAIF,
-    AF_CAN,
-    AF_DEC_NET,
-    AF_ECONET,
-    AF_IB,
-    AF_IEEE802154,
-    AF_INET,
-    AF_INET6,
-    AF_IPX,
-    AF_IRDA,
-    AF_ISDN,
-    AF_IUCV,
-    AF_KCM,
-    AF_KEY,
-    AF_LINK,
-    AF_LLC,
-    AF_LOCAL,
-    AF_MAX,
-    AF_MCTP,
-    AF_MPLS,
-    AF_NETBEUI,
-    AF_NETLINK,
-    AF_NETROM,
-    AF_NFC,
-    AF_PACKET,
-    AF_PHONET,
-    AF_PPPOX,
-    AF_QIPCRTR,
-    AF_RDS,
-    AF_ROSE,
-    AF_ROUTE,
-    AF_RXRPC,
-    AF_SECURITY,
-    AF_SMC,
-    AF_SNA,
-    AF_TIPC,
-    AF_UNIX,
-    AF_UNSPEC,
-    AF_VSOCK,
-    AF_WANPIPE,
-    AF_X25,
-    AF_XDP,
-    Addresses,
-    DefaultGatewayEntry,
-    GatewaysTable,
-    InterfaceName,
-    InterfaceType,
-)
+logging.basicConfig(level=logging.ERROR)
+
+logger = logging.getLogger(__name__)
+
+from .defs import (AF_ALG, AF_APPLETALK, AF_ASH, AF_ATMPVC, AF_ATMSVC, AF_AX25,
+                   AF_BLUETOOTH, AF_BRIDGE, AF_CAIF, AF_CAN, AF_DEC_NET,
+                   AF_ECONET, AF_IB, AF_IEEE802154, AF_INET, AF_INET6, AF_IPX,
+                   AF_IRDA, AF_ISDN, AF_IUCV, AF_KCM, AF_KEY, AF_LINK, AF_LLC,
+                   AF_LOCAL, AF_MAX, AF_MCTP, AF_MPLS, AF_NETBEUI, AF_NETLINK,
+                   AF_NETROM, AF_NFC, AF_PACKET, AF_PHONET, AF_PPPOX,
+                   AF_QIPCRTR, AF_RDS, AF_ROSE, AF_ROUTE, AF_RXRPC,
+                   AF_SECURITY, AF_SMC, AF_SNA, AF_TIPC, AF_UNIX, AF_UNSPEC,
+                   AF_VSOCK, AF_WANPIPE, AF_X25, AF_XDP, Addresses,
+                   DefaultGatewayEntry, GatewaysTable, InterfaceName,
+                   InterfaceType)
+
+_platform = sys.platform
+
 from .netifaces import _ifaddresses, _interfaces
 
 __all__ = [
@@ -143,11 +107,19 @@ def ifaddresses(if_name: str) -> Addresses:
     return cast(Addresses, _ifaddresses(if_name))
 
 
-def _parse_route_file() -> GatewaysTable:
-    from .routes import routes_parse
+def _ip_tool_path() -> Optional[str]:
+    is_linux = _platform == "linux" or _platform == "linux32"
+    if not is_linux:
+        return None
 
-    route_content = _NIX_ROUTE_FILE.read_text()
-    return routes_parse(route_content)
+    which_ip_result = subprocess.run(["which", "ip"], capture_output=True)
+
+    if which_ip_result.returncode == 0:
+        ip = which_ip_result.stdout.decode("UTF-8").strip()
+    else:
+        ip = None
+
+    return ip
 
 
 def gateways() -> GatewaysTable:
@@ -157,8 +129,18 @@ def gateways() -> GatewaysTable:
     :return a routing table
     """
 
-    if _NIX_ROUTE_FILE.exists():
-        return _parse_route_file()
+    ip_tool_path = _ip_tool_path()
+
+    if ip_tool_path:
+        from .routes import routes_parse_ip_tool
+
+        logging.debug("Using ip tool")
+        return routes_parse_ip_tool(ip_tool_path)
+    elif _NIX_ROUTE_FILE.exists():
+        from .routes import routes_parse_file
+
+        logging.debug("Using route file")
+        return routes_parse_file(_NIX_ROUTE_FILE.read_text())
     else:
         raise NotImplementedError("No implementation for `gateways()` yet")
 

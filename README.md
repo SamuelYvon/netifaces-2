@@ -20,7 +20,7 @@ guarantee anything.
 ### 1.1 What is not working **right-now**
 
 - The `gateways` API is only working if your system has a `/proc/net/route` file
-- The `windows` API is non-functional
+- The `windows` gateways API is non-functional
 
 ## 2. Usage
 

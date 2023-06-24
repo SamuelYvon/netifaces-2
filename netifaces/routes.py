@@ -1,3 +1,4 @@
+import subprocess
 from collections import defaultdict
 from typing import List
 
@@ -18,7 +19,46 @@ GATEWAY = "Gateway"
 NIL_ADDR = "0" * 8
 
 
-def routes_parse(content: str) -> GatewaysTable:
+def routes_parse_ip_tool(ip_tool_path: str) -> GatewaysTable:
+    ipv4_query = subprocess.run([ip_tool_path, "r"], capture_output=True)
+    ipv6_query = subprocess.run([ip_tool_path, "-6", "r"], capture_output=True)
+
+    if ipv4_query.returncode != 0 or ipv6_query.returncode != 0:
+        raise RuntimeError(
+            "Cannot use the IP tool; although it is present on the system"
+        )
+
+    ipv4_lines = ipv4_query.stdout.decode("UTF-8").splitlines()
+    ipv6_lines = ipv6_query.stdout.decode("UTF-8").splitlines()
+
+    table: GatewaysTable = defaultdict(lambda *_: [])
+
+    for if_type, lines in [
+        (InterfaceType.AF_INET, ipv4_lines),
+        (InterfaceType.AF_INET6, ipv6_lines),
+    ]:
+        for line in lines:
+            cols = line.split(" ")
+
+            default = cols[0] == "default"
+
+            # Only check IP* routes
+            device = cols[1]
+            if device != "via":
+                continue
+
+            gateway_ip_with_mask = cols[2]
+            gateway_ip = gateway_ip_with_mask.split("/")[0]
+            iface = cols[4]
+
+            table[if_type.value].append(
+                (gateway_ip, iface, True) if default else (gateway_ip, iface)
+            )
+
+    return dict(table)
+
+
+def routes_parse_file(content: str) -> GatewaysTable:
     lined = content.splitlines()
 
     if len(lined) == 0:
