@@ -51,7 +51,7 @@ def routes_parse_ip_tool(ip_tool_path: str) -> GatewaysTable:
             gateway_ip = gateway_ip_with_mask.split("/")[0]
             iface = cols[4]
 
-            table[if_type.value].append(
+            table[if_type].append(
                 (gateway_ip, iface, True) if default else (gateway_ip, iface)
             )
 

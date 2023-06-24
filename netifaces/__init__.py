@@ -8,24 +8,63 @@ import sys
 from pathlib import Path
 from typing import List, Optional, cast
 
-logging.basicConfig(level=logging.ERROR)
-
-logger = logging.getLogger(__name__)
-
-from .defs import (AF_ALG, AF_APPLETALK, AF_ASH, AF_ATMPVC, AF_ATMSVC, AF_AX25,
-                   AF_BLUETOOTH, AF_BRIDGE, AF_CAIF, AF_CAN, AF_DEC_NET,
-                   AF_ECONET, AF_IB, AF_IEEE802154, AF_INET, AF_INET6, AF_IPX,
-                   AF_IRDA, AF_ISDN, AF_IUCV, AF_KCM, AF_KEY, AF_LINK, AF_LLC,
-                   AF_LOCAL, AF_MAX, AF_MCTP, AF_MPLS, AF_NETBEUI, AF_NETLINK,
-                   AF_NETROM, AF_NFC, AF_PACKET, AF_PHONET, AF_PPPOX,
-                   AF_QIPCRTR, AF_RDS, AF_ROSE, AF_ROUTE, AF_RXRPC,
-                   AF_SECURITY, AF_SMC, AF_SNA, AF_TIPC, AF_UNIX, AF_UNSPEC,
-                   AF_VSOCK, AF_WANPIPE, AF_X25, AF_XDP, Addresses,
-                   DefaultGatewayEntry, GatewaysTable, InterfaceName,
-                   InterfaceType)
-
-_platform = sys.platform
-
+from .defs import (
+    AF_ALG,
+    AF_APPLETALK,
+    AF_ASH,
+    AF_ATMPVC,
+    AF_ATMSVC,
+    AF_AX25,
+    AF_BLUETOOTH,
+    AF_BRIDGE,
+    AF_CAIF,
+    AF_CAN,
+    AF_DEC_NET,
+    AF_ECONET,
+    AF_IB,
+    AF_IEEE802154,
+    AF_INET,
+    AF_INET6,
+    AF_IPX,
+    AF_IRDA,
+    AF_ISDN,
+    AF_IUCV,
+    AF_KCM,
+    AF_KEY,
+    AF_LINK,
+    AF_LLC,
+    AF_LOCAL,
+    AF_MAX,
+    AF_MCTP,
+    AF_MPLS,
+    AF_NETBEUI,
+    AF_NETLINK,
+    AF_NETROM,
+    AF_NFC,
+    AF_PACKET,
+    AF_PHONET,
+    AF_PPPOX,
+    AF_QIPCRTR,
+    AF_RDS,
+    AF_ROSE,
+    AF_ROUTE,
+    AF_RXRPC,
+    AF_SECURITY,
+    AF_SMC,
+    AF_SNA,
+    AF_TIPC,
+    AF_UNIX,
+    AF_UNSPEC,
+    AF_VSOCK,
+    AF_WANPIPE,
+    AF_X25,
+    AF_XDP,
+    Addresses,
+    DefaultGatewayEntry,
+    GatewaysTable,
+    InterfaceName,
+    InterfaceType,
+)
 from .netifaces import _ifaddresses, _interfaces
 
 __all__ = [
@@ -81,6 +120,11 @@ __all__ = [
     "AF_MAX",
     "AF_LINK",
 ]
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+_platform = sys.platform
+
 
 _NIX_ROUTE_FILE = Path("/proc/net/route")
 
