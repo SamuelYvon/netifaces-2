@@ -121,7 +121,6 @@ __all__ = [
     "AF_LINK",
 ]
 
-logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 _platform = sys.platform
 
