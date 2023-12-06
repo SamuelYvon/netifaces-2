@@ -149,25 +149,24 @@ fn ifaddresses_ipv6(
     if_addrs: &mut IfAddrs,
 ) -> Result<(), Box<dyn std::error::Error>> {
     todo!("The API used to get Ipv4 does not work for ipv6");
-//     for win_ip_info in interface..iter() {
-//         let ent = if_addrs.entry(AF_INET6.into());
-//         let addr_vec = ent.or_insert(vec![]);
-//
-//         // TODO: mask
-//         // (
-//         //     BROADCAST_ADDR.to_string(),
-//         //     ip_to_string(be_to_le(broad_addr)),
-//         // ),
-//
-//         addr_vec.push(HashMap::from([
-//             (ADDR_ADDR.to_string(), win_ip_info.ip_address.clone()),
-//             (MASK_ADDR.to_string(), win_ip_info.mask.clone()),
-//         ]));
-//     }
+    //     for win_ip_info in interface..iter() {
+    //         let ent = if_addrs.entry(AF_INET6.into());
+    //         let addr_vec = ent.or_insert(vec![]);
+    //
+    //         // TODO: mask
+    //         // (
+    //         //     BROADCAST_ADDR.to_string(),
+    //         //     ip_to_string(be_to_le(broad_addr)),
+    //         // ),
+    //
+    //         addr_vec.push(HashMap::from([
+    //             (ADDR_ADDR.to_string(), win_ip_info.ip_address.clone()),
+    //             (MASK_ADDR.to_string(), win_ip_info.mask.clone()),
+    //         ]));
+    //     }
 
     Ok(())
 }
-
 
 fn ifaddresses_mac(
     interface: &WinIface,
