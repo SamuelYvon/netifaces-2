@@ -23,7 +23,7 @@ struct WinIpInfo {
 struct WinIface {
     name: String,
     ip_addresses: Vec<WinIpInfo>,
-    mac_address: [u8; 8],
+    mac_address: [u8; 6],
 }
 
 fn win_adapter_name_to_string(arr: &[CHAR]) -> String {
@@ -143,6 +143,32 @@ fn ifaddresses_ipv4(
     Ok(())
 }
 
+/// List the IPv6 addrs. of the machine
+fn ifaddresses_ipv6(
+    interface: &WinIface,
+    if_addrs: &mut IfAddrs,
+) -> Result<(), Box<dyn std::error::Error>> {
+    todo!("The API used to get Ipv4 does not work for ipv6");
+//     for win_ip_info in interface..iter() {
+//         let ent = if_addrs.entry(AF_INET6.into());
+//         let addr_vec = ent.or_insert(vec![]);
+//
+//         // TODO: mask
+//         // (
+//         //     BROADCAST_ADDR.to_string(),
+//         //     ip_to_string(be_to_le(broad_addr)),
+//         // ),
+//
+//         addr_vec.push(HashMap::from([
+//             (ADDR_ADDR.to_string(), win_ip_info.ip_address.clone()),
+//             (MASK_ADDR.to_string(), win_ip_info.mask.clone()),
+//         ]));
+//     }
+
+    Ok(())
+}
+
+
 fn ifaddresses_mac(
     interface: &WinIface,
     if_addrs: &mut IfAddrs,
@@ -175,8 +201,8 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 
     let interface = search_result.get(0).unwrap();
 
-    // TODO: could be more specific into what we give to which function to avoid cloning strings
     ifaddresses_ipv4(interface, &mut if_addrs)?;
+    // ifaddresses_ipv6(interface, &mut if_addrs)?;
     ifaddresses_mac(interface, &mut if_addrs)?;
 
     Ok(if_addrs)

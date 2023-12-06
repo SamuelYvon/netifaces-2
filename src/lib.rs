@@ -40,7 +40,7 @@ pub fn ip_to_string(ip: u32) -> String {
 
 /// Given the bytes that makes up a mac address, return the String
 /// representation as it would be expected in the colloquial form.
-pub fn mac_to_string(mac: &[u8; 8]) -> String {
+pub fn mac_to_string(mac: &[u8; 6]) -> String {
     let mut s = String::new();
 
     for i in 0..mac.len() {
