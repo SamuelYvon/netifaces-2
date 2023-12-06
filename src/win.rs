@@ -164,8 +164,6 @@ fn ifaddresses_ipv6(
     //             (MASK_ADDR.to_string(), win_ip_info.mask.clone()),
     //         ]));
     //     }
-
-    Ok(())
 }
 
 fn ifaddresses_mac(
