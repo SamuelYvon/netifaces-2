@@ -6,6 +6,7 @@ use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap;
 use std::ffi::{c_void, CStr};
 use std::mem::size_of;
+use std::net::Ipv6Addr;
 use std::ptr;
 
 use windows::Win32::Foundation::{CHAR, ERROR_BUFFER_OVERFLOW, NO_ERROR, WIN32_ERROR};
@@ -190,10 +191,13 @@ unsafe fn sockaddr_to_string(sock_addr: SOCKET_ADDRESS) -> String {
         .to_string()
 }
 
-type Ipv6Mapping = HashMap<String, Vec<String>>;
+type Ipv6Endpoint = (Ipv6Addr, String);
+
+type Ipv6Mapping = HashMap<String, Vec<Ipv6Endpoint>>;
 
 unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>> {
     let af_type = AF_INET6;
+    let mut eps = HashMap::new();
 
     let mut size = 0;
 
@@ -224,8 +228,6 @@ unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>
         ))?;
     }
 
-    let mut addresses_of_if = HashMap::new();
-
     let mut traversal = ptr;
     while !traversal.is_null() {
         let name = (*traversal).Description.to_string().unwrap();
@@ -236,8 +238,11 @@ unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>
             let sock_addr = (*addr_ptr).Address;
             let addr = sockaddr_to_string(sock_addr);
 
-            let entry = addresses_of_if.entry(name.clone()).or_insert(vec![]);
-            entry.push(addr);
+            let entry = eps.entry(name.clone()).or_insert(vec![]);
+            // TODO: add the mac
+            entry.push(
+                (Ipv6Addr::from_str(&addr), addr)
+            );
 
             addr_ptr = (*addr_ptr).Next;
         }
@@ -245,7 +250,7 @@ unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>
         traversal = (*traversal).Next;
     }
 
-    Ok(addresses_of_if)
+    Ok(eps)
 }
 
 /// List the IPv6 addrs. of the machine
