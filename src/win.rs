@@ -240,9 +240,7 @@ unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>
 
             let entry = eps.entry(name.clone()).or_insert(vec![]);
             // TODO: add the mac
-            entry.push(
-                (Ipv6Addr::from_str(&addr), addr)
-            );
+            entry.push((Ipv6Addr::from_str(&addr), addr));
 
             addr_ptr = (*addr_ptr).Next;
         }
