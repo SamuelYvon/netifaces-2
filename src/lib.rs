@@ -14,6 +14,7 @@ mod linux;
 #[cfg(not(target_family = "windows"))]
 use linux::{linux_ifaddresses as ifaddresses, linux_interfaces as interfaces};
 
+mod common;
 #[cfg(target_family = "windows")]
 mod win;
 
@@ -40,11 +41,11 @@ pub fn ip_to_string(ip: u32) -> String {
 
 /// Given the bytes that makes up a mac address, return the String
 /// representation as it would be expected in the colloquial form.
-pub fn mac_to_string(mac: &[u8; 6]) -> String {
+pub fn mac_to_string(mac: &Vec<u8>) -> String {
     let mut s = String::new();
 
     for i in 0..mac.len() {
-        write!(&mut s, "{:X?}", mac[i]).unwrap();
+        write!(&mut s, "{:02X?}", mac[i]).unwrap();
         if i + 1 < mac.len() {
             s.push(':');
         }

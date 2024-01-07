@@ -16,7 +16,7 @@ pub fn linux_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
         s.insert(addr.interface_name);
     }
 
-    Ok(Vec::from_iter(s.into_iter()))
+    Ok(Vec::from_iter(s))
 }
 
 fn add_to_types_mat(
@@ -26,7 +26,7 @@ fn add_to_types_mat(
     types_mat: &mut HashMap<i32, Vec<AddrPairs>>,
     any: &mut bool,
 ) {
-    let e = types_mat.entry(af_class.into()).or_insert_with(Vec::new);
+    let e = types_mat.entry(af_class.into()).or_default();
 
     if !*any {
         *any = true;
