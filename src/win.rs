@@ -36,7 +36,6 @@ struct WinIface {
     mac_address: Vec<u8>,
 }
 
-
 type Ipv6Endpoint = (Ipv6Addr, String);
 
 type Ipv6Mapping = HashMap<String, Vec<Ipv6Endpoint>>;
@@ -134,7 +133,6 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
 
     Ok(result_vec)
 }
-
 
 fn ifaddresses_ipv4(
     interface: &WinIface,
@@ -258,7 +256,9 @@ fn ifaddresses_ipv6(
 
     let addrs = match addrs_per_iface.get(&interface.name) {
         Some(arr) => arr,
-        None => { return Ok(()); }
+        None => {
+            return Ok(());
+        }
     };
 
     for (ip, mask) in addrs {
