@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 use crate::mac_to_string;
 use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, MASK_ADDR};
 use std::alloc::{alloc, dealloc, Layout};
@@ -37,6 +36,11 @@ struct WinIface {
     mac_address: Vec<u8>,
 }
 
+
+type Ipv6Endpoint = (Ipv6Addr, String);
+
+type Ipv6Mapping = HashMap<String, Vec<Ipv6Endpoint>>;
+
 fn win_adapter_name_to_string(arr: &[CHAR]) -> String {
     let mut s = String::new();
 
@@ -48,12 +52,6 @@ fn win_adapter_name_to_string(arr: &[CHAR]) -> String {
     }
 
     s
-}
-
-/// Given a big endian u32, returns it in little-endian.
-/// This is independent of the underlying architecture.
-fn be_to_le(s: u32) -> u32 {
-    u32::to_le(u32::from_be(s))
 }
 
 fn win_ip_addr_list_to_vec(ip: IP_ADDR_STRING) -> Vec<WinIpInfo> {
@@ -137,9 +135,6 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
     Ok(result_vec)
 }
 
-pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    win_explore_adapters().map(|vec| vec.into_iter().map(|win_iface| win_iface.name).collect())
-}
 
 fn ifaddresses_ipv4(
     interface: &WinIface,
@@ -149,7 +144,7 @@ fn ifaddresses_ipv4(
         let ent = if_addrs.entry(AF_INET.into());
         let addr_vec = ent.or_default();
 
-        // TODO: mask
+        // TODO: broadcast
         // (
         //     BROADCAST_ADDR.to_string(),
         //     ip_to_string(be_to_le(broad_addr)),
@@ -191,10 +186,8 @@ unsafe fn sockaddr_to_string(sock_addr: SOCKET_ADDRESS) -> String {
         .to_string()
 }
 
-type Ipv6Endpoint = (Ipv6Addr, String);
-
-type Ipv6Mapping = HashMap<String, Vec<Ipv6Endpoint>>;
-
+/// Get the network adapters' address(es). Only returns Ipv6 information for now but could
+/// be extended for v4.
 unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>> {
     let af_type = AF_INET6;
     let mut eps = HashMap::new();
@@ -231,16 +224,21 @@ unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>
     let mut traversal = ptr;
     while !traversal.is_null() {
         let name = (*traversal).Description.to_string().unwrap();
+        let phy = (*traversal).PhysicalAddress;
+        let phy_len = (*traversal).PhysicalAddressLength as usize;
+        let phy = Vec::from(&phy[..phy_len]);
+        let phy = mac_to_string(&phy);
 
         let mut addr_ptr = (*traversal).FirstUnicastAddress;
 
         while !addr_ptr.is_null() {
             let sock_addr = (*addr_ptr).Address;
-            let addr = sockaddr_to_string(sock_addr);
+            let addr_str = sockaddr_to_string(sock_addr);
 
             let entry = eps.entry(name.clone()).or_insert(vec![]);
-            // TODO: add the mac
-            entry.push((Ipv6Addr::from_str(&addr), addr));
+
+            let addr = addr_str.parse::<Ipv6Addr>()?;
+            entry.push((addr, phy.clone()));
 
             addr_ptr = (*addr_ptr).Next;
         }
@@ -258,20 +256,17 @@ fn ifaddresses_ipv6(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let addrs_per_iface = unsafe { adapters_addresses() }?;
 
-    let addrs = addrs_per_iface.get(&interface.name);
-    if addrs.is_none() {
-        return Ok(());
-    }
+    let addrs = match addrs_per_iface.get(&interface.name) {
+        Some(arr) => arr,
+        None => { return Ok(()); }
+    };
 
-    let addrs = addrs.unwrap();
-
-    for addr in addrs {
+    for (ip, mask) in addrs {
         let addr_vec = if_addrs.entry(AF_INET6.0 as i32).or_default();
 
         addr_vec.push(HashMap::from([
-            (ADDR_ADDR.to_string(), addr.clone()),
-            // TODO
-            // (MASK_ADDR.to_string(), win_ip_info.mask.clone()),
+            (ADDR_ADDR.to_string(), ip.to_string()),
+            (MASK_ADDR.to_string(), mask.to_string()),
         ]));
     }
 
@@ -291,6 +286,8 @@ fn ifaddresses_mac(
     Ok(())
 }
 
+/// Given an interface name, returns all the addresses associated with that interface. The result
+/// is shaped loosely in a map.
 pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
     let mut if_addrs: IfAddrs = HashMap::new();
 
@@ -315,4 +312,9 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
     ifaddresses_mac(interface, &mut if_addrs)?;
 
     Ok(if_addrs)
+}
+
+/// List all the network interfaces available on the system.
+pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    win_explore_adapters().map(|vec| vec.into_iter().map(|win_iface| win_iface.name).collect())
 }

@@ -45,7 +45,7 @@ pub fn mac_to_string(mac: &Vec<u8>) -> String {
     let mut s = String::new();
 
     for i in 0..mac.len() {
-        write!(&mut s, "{:X?}", mac[i]).unwrap();
+        write!(&mut s, "{:02X?}", mac[i]).unwrap();
         if i + 1 < mac.len() {
             s.push(':');
         }
