@@ -9,7 +9,7 @@ version = "0.0.21"
 requires-python = ">=3.7"
 readme = "README.md"
 license = { file = "LICENSE" }
-dependencies = ['typing-extensions']
+dependencies = ['typing-extensions; python_version < "3.8"']
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
