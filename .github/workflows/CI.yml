@@ -21,7 +21,6 @@ jobs:
 
   linux:
     name: Build Linux wheels
-    needs: [ lint-check ]
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
@@ -51,7 +50,6 @@ jobs:
 
   linux-cross:
     name: Build Linux wheels
-    needs: [ lint-check ]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -72,7 +70,6 @@ jobs:
 
   linux-musl:
     name: Build Linux musl wheels
-    needs: [ lint-check ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -93,7 +90,6 @@ jobs:
 
   linux-legacy:
     name: Build Linux legacy wheels
-    needs: [ lint-check ]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -119,7 +115,6 @@ jobs:
 
   windows:
     name: Build Windows wheels
-    needs: [ lint-check ]
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
@@ -147,7 +142,6 @@ jobs:
 
   macos:
     name: Build MacOS wheels
-    needs: [ lint-check ]
     runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
@@ -174,7 +168,7 @@ jobs:
         path: dist
 
   release:
-    needs: [ macos, windows, linux, linux-cross, linux-musl ]
+    needs: [ lint-check, macos, windows, linux, linux-cross, linux-musl ]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:

@@ -135,11 +135,15 @@ _platform = sys.platform
 _NIX_ROUTE_FILE = Path("/proc/net/route")
 
 
-def interfaces(display: InterfaceDisplay = 0) -> List[InterfaceName]:
+def interfaces(
+    display: InterfaceDisplay = InterfaceDisplay.HumanReadable,
+) -> List[InterfaceName]:
     """
     List the network interfaces that are available
 
-    :param display: how to display the interface names. See the `InterfaceDisplay` enum for the values. By default, human-readable.
+    :param display: how to display the interface names.
+                    See the `InterfaceDisplay` enum for the values. By default,
+                    human-readable.
     :return the list of network interfaces that are available
     """
 
