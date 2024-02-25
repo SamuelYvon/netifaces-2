@@ -1,7 +1,11 @@
 from enum import IntEnum
+import sys
 from typing import Dict, List, Tuple, Union
 
-from typing_extensions import Literal
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 AF_UNSPEC = 0
 AF_UNIX = 1
