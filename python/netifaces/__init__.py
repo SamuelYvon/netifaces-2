@@ -147,7 +147,7 @@ def interfaces(
     :return the list of network interfaces that are available
     """
 
-    return cast(List[InterfaceName], _interfaces(display))
+    return cast(List[InterfaceName], _interfaces(display.value))
 
 
 def ifaddresses(if_name: str) -> Addresses:
