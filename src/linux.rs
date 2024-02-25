@@ -1,5 +1,4 @@
 use crate::common::InterfaceDisplay;
-use crate::ip_to_string;
 use crate::types::{
     AddrPairs, IfAddrs, ADDR_ADDR, AF_ALG, AF_INET, AF_INET6, AF_NETLINK, AF_PACKET, AF_VSOCK,
     BROADCAST_ADDR, MASK_ADDR, PEER_ADDR,
@@ -74,13 +73,7 @@ pub fn linux_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::E
                 }
 
                 if let Some(inet_addr) = address.as_sockaddr_in() {
-                    add_to_types_mat(
-                        AF_INET,
-                        &ip_to_string(inet_addr.ip()),
-                        name,
-                        &mut types_mat,
-                        &mut any,
-                    );
+                    add_to_types_mat(AF_INET, &inet_addr.ip(), name, &mut types_mat, &mut any);
                 }
 
                 #[cfg(not(any(target_os = "ios", target_os = "macos")))]
