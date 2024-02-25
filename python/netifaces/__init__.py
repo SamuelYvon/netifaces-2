@@ -2,6 +2,7 @@
 netifaces(2), netifaces reborn
 See https://github.com/SamuelYvon/netifaces-2
 """
+import enum
 import logging
 import subprocess
 import sys
@@ -121,6 +122,12 @@ __all__ = [
     "AF_LINK",
 ]
 
+
+class InterfaceDisplay(enum.Enum):
+    HumanReadable = 0
+    MachineReadable = 1
+
+
 logger = logging.getLogger(__name__)
 _platform = sys.platform
 
@@ -128,14 +135,15 @@ _platform = sys.platform
 _NIX_ROUTE_FILE = Path("/proc/net/route")
 
 
-def interfaces() -> List[InterfaceName]:
+def interfaces(display: InterfaceDisplay = 0) -> List[InterfaceName]:
     """
     List the network interfaces that are available
 
+    :param display: how to display the interface names. See the `InterfaceDisplay` enum for the values. By default, human-readable.
     :return the list of network interfaces that are available
     """
 
-    return cast(List[InterfaceName], _interfaces())
+    return cast(List[InterfaceName], _interfaces(display))
 
 
 def ifaddresses(if_name: str) -> Addresses:

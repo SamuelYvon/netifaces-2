@@ -18,6 +18,7 @@ mod common;
 #[cfg(target_family = "windows")]
 mod win;
 
+use crate::common::InterfaceDisplay;
 #[cfg(target_family = "windows")]
 use win::{windows_ifaddresses as ifaddresses, windows_interfaces as interfaces};
 
@@ -60,8 +61,9 @@ pub fn _ip_to_string(ip: u32) -> String {
 }
 
 #[pyfunction]
-fn _interfaces() -> PyResult<Vec<String>> {
-    let maybe_ifs = interfaces();
+fn _interfaces(interface_display: i32) -> PyResult<Vec<String>> {
+    let interface_display = InterfaceDisplay::try_from(interface_display)?;
+    let maybe_ifs = interfaces(interface_display);
 
     maybe_ifs.map_err(|e| {
         let str_message = e.to_string();

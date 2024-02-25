@@ -9,6 +9,7 @@ name = "netifaces"
 crate-type = ["cdylib"]
 
 [dependencies]
+log = "0.4.20"
 thiserror = "1.0.51"
 
 [target.'cfg(windows)'.dependencies]

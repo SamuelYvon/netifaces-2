@@ -1,5 +1,5 @@
-from enum import IntEnum
 import sys
+from enum import IntEnum
 from typing import Dict, List, Tuple, Union
 
 if sys.version_info >= (3, 8):

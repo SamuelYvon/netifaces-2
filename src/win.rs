@@ -1,8 +1,11 @@
 #![allow(dead_code)]
+
+use crate::common::InterfaceDisplay;
 use crate::mac_to_string;
 use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, MASK_ADDR};
 use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap;
+use std::error::Error;
 use std::ffi::{c_void, CStr};
 use std::mem::size_of;
 use std::net::Ipv6Addr;
@@ -31,7 +34,10 @@ struct WinIpInfo {
 
 #[derive(Debug)]
 struct WinIface {
+    /// The windows name of the interface (some sort of UUID)
     name: String,
+    /// The human-readable name of the interface
+    description: String,
     ip_addresses: Vec<WinIpInfo>,
     mac_address: Vec<u8>,
 }
@@ -113,7 +119,8 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
             let entry = *ptr.add(i);
 
             // We use the description as it's more useful than a uuid
-            let name = win_adapter_name_to_string(&entry.Description);
+            let name = win_adapter_name_to_string(&entry.AdapterName);
+            let description = win_adapter_name_to_string(&entry.Description);
 
             let ip_addresses = win_ip_addr_list_to_vec(entry.IpAddressList);
             let addr_len = entry.AddressLength as usize;
@@ -123,6 +130,7 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
 
             result_vec.push(WinIface {
                 name,
+                description,
                 ip_addresses,
                 mac_address,
             });
@@ -254,7 +262,7 @@ fn ifaddresses_ipv6(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let addrs_per_iface = unsafe { adapters_addresses() }?;
 
-    let addrs = match addrs_per_iface.get(&interface.name) {
+    let addrs = match addrs_per_iface.get(&interface.description) {
         Some(arr) => arr,
         None => {
             return Ok(());
@@ -286,6 +294,13 @@ fn ifaddresses_mac(
     Ok(())
 }
 
+#[test]
+fn adapters() -> Result<(), Box<dyn Error>> {
+    let adapters = win_explore_adapters()?;
+    dbg!(adapters);
+    Ok(())
+}
+
 /// Given an interface name, returns all the addresses associated with that interface. The result
 /// is shaped loosely in a map.
 pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
@@ -294,7 +309,7 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
     let adapters = win_explore_adapters()?;
     let search_result: Vec<WinIface> = adapters
         .into_iter()
-        .filter(|adapter| adapter.name == if_name)
+        .filter(|adapter| adapter.description == if_name)
         .collect();
 
     if search_result.is_empty() {
@@ -315,6 +330,17 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 }
 
 /// List all the network interfaces available on the system.
-pub fn windows_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    win_explore_adapters().map(|vec| vec.into_iter().map(|win_iface| win_iface.name).collect())
+///
+/// # Params
+/// - `display`: an [InterfaceDisplay] that controls what ID is returned from the call to
+///              identify the interface.
+pub fn windows_interfaces(display: InterfaceDisplay) -> Result<Vec<String>, Box<dyn Error>> {
+    win_explore_adapters().map(|vec| {
+        vec.into_iter()
+            .map(|win_iface| match display {
+                InterfaceDisplay::HumanReadable => win_iface.description,
+                InterfaceDisplay::MachineReadable => win_iface.name,
+            })
+            .collect()
+    })
 }

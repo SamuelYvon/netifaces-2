@@ -1,3 +1,4 @@
+use crate::common::InterfaceDisplay;
 use crate::ip_to_string;
 use crate::types::{
     AddrPairs, IfAddrs, ADDR_ADDR, AF_ALG, AF_INET, AF_INET6, AF_NETLINK, AF_PACKET, AF_VSOCK,
@@ -7,7 +8,9 @@ use nix::ifaddrs;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
-pub fn linux_interfaces() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+pub fn linux_interfaces(
+    _display: InterfaceDisplay,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut s: HashSet<String> = HashSet::new();
 
     let addrs = ifaddrs::getifaddrs()?;
