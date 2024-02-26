@@ -6,8 +6,8 @@ def test_interfaces_returns_something() -> None:
 
 
 def test_interfaces_by_index_returns_same_interface_list() -> None:
-    # Interface indices are difficult to verify, but we can at least check that we get the same set
-    # of interfaces in both these functions
+    # Interface indices are difficult to verify, but we can at least check that we get
+    # the same set of interfaces in both these functions
     assert set(netifaces.interfaces_by_index().values()) == set(netifaces.interfaces())
 
 
@@ -55,20 +55,27 @@ def test_loopback_addr_is_returned() -> None:
 
         if netifaces.AF_INET in address_table:
             for ipv4_settings in address_table[netifaces.AF_INET]:
-                print(f"Loopback test: Considering iface {interface} IPv4 address {ipv4_settings['addr']}")
+                print(
+                    f"Loopback test: Considering iface {interface} IPv4 address "
+                    f"{ipv4_settings['addr']}"
+                )
                 if ipv4_settings["addr"] == "127.0.0.1":
                     print("Loopback IPv4 found!")
                     loopback_ipv4_found = True
 
         if netifaces.AF_INET6 in address_table:
             for ipv6_settings in address_table[netifaces.AF_INET6]:
-                print(f"Loopback test: Considering iface {interface} IPv6 address {ipv6_settings['addr']}")
+                print(
+                    f"Loopback test: Considering iface {interface} IPv6 address "
+                    f"{ipv6_settings['addr']}"
+                )
                 if ipv6_settings["addr"] == "::1":
                     print("Loopback IPv6 found!")
                     loopback_ipv6_found = True
 
     assert loopback_ipv4_found
     assert loopback_ipv6_found
+
 
 def test_all_ifaces_have_ipv4() -> None:
     """

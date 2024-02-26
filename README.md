@@ -107,10 +107,13 @@ It's then recommended to create a virtual environment and install the package pl
 $ python3 -m venv venv
 $ source venv/bin/activate
 $ python3 -m pip install -e '.[dev]' # This internally runs the Rust compiler
-$ source venv/bin/activate # Re-source the venv, only has to be done after the first time you run pip install
+$ python3 -m pip install pre-commit
+$ source venv/bin/activate # Re-source the venv to pick up new scripts
+$ pre-commit install
 ```
 
-Now you should be able to run the tests:
+To recompile the rust code after making changes, run:
 ```
-$ pytest
+$ python3 -m pip install -e '.[dev]'
 ```
+again.
