@@ -150,7 +150,7 @@ def interfaces(
     return cast(List[InterfaceName], _interfaces(display.value))
 
 
-def interfaces_by_index() -> Dict[int, str]:
+def interfaces_by_index() -> Dict[int, InterfaceName]:
     """
     List the network interfaces by their index
 

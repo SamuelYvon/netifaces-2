@@ -12,7 +12,7 @@ mod types;
 mod linux;
 
 #[cfg(not(target_family = "windows"))]
-use linux::{linux_ifaddresses as ifaddresses, linux_interfaces as interfaces};
+use linux::{linux_ifaddresses as ifaddresses, posix_interfaces as interfaces, posix_interfaces_by_index as interfaces_by_index};
 
 mod common;
 #[cfg(target_family = "windows")]
