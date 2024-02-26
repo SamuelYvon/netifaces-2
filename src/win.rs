@@ -1,7 +1,6 @@
 #![allow(dead_code)]
-
 use crate::common::InterfaceDisplay;
-use crate::mac_to_string;
+use crate::{mac_to_string, types};
 use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, MASK_ADDR};
 use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap;
@@ -38,6 +37,7 @@ struct WinIface {
     name: String,
     /// The human-readable name of the interface
     description: String,
+    index: u32,
     ip_addresses: Vec<WinIpInfo>,
     mac_address: Vec<u8>,
 }
@@ -63,19 +63,24 @@ fn win_ip_addr_list_to_vec(ip: IP_ADDR_STRING) -> Vec<WinIpInfo> {
     let mut r = vec![];
 
     loop {
+
         let info = WinIpInfo {
             ip_address: win_adapter_name_to_string(&ip.IpAddress.String),
             mask: win_adapter_name_to_string(&ip.IpMask.String),
         };
 
-        r.push(info);
+        // In my testing, GetAdaptersInfo returns an IP of "0.0.0.0" when the interface
+        // is down and does not have an IP assigned.  So only include the IP if it's
+        // not 0.0.0.0
+        if info.ip_address != "0.0.0.0" {
+            r.push(info);
+        }
 
         let x = ip.Next;
         if x.is_null() {
             break;
         }
     }
-
     r
 }
 
@@ -121,6 +126,7 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
             // We use the description as it's more useful than a uuid
             let name = win_adapter_name_to_string(&entry.AdapterName);
             let description = win_adapter_name_to_string(&entry.Description);
+            let index = entry.Index;
 
             let ip_addresses = win_ip_addr_list_to_vec(entry.IpAddressList);
             let addr_len = entry.AddressLength as usize;
@@ -131,6 +137,7 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
             result_vec.push(WinIface {
                 name,
                 description,
+                index,
                 ip_addresses,
                 mac_address,
             });
@@ -270,7 +277,7 @@ fn ifaddresses_ipv6(
     };
 
     for (ip, mask) in addrs {
-        let addr_vec = if_addrs.entry(AF_INET6.0 as i32).or_default();
+        let addr_vec = if_addrs.entry(types::AF_INET6 as i32).or_default();
 
         addr_vec.push(HashMap::from([
             (ADDR_ADDR.to_string(), ip.to_string()),
@@ -343,4 +350,25 @@ pub fn windows_interfaces(display: InterfaceDisplay) -> Result<Vec<String>, Box<
             })
             .collect()
     })
+}
+
+/// List all the network interfaces available on the system by their indexes
+pub fn windows_interfaces_by_index(display: InterfaceDisplay) -> Result<types::IfacesByIndex, Box<dyn std::error::Error>> {
+    let interfaces = win_explore_adapters();
+
+    match interfaces {
+        Ok(win_ifaces) => {
+            let mut interfaces = types::IfacesByIndex::new();
+            for win_iface in win_ifaces {
+                if display==InterfaceDisplay::HumanReadable {
+                    interfaces.insert(win_iface.index, win_iface.description);
+                }
+                else {
+                    interfaces.insert(win_iface.index, win_iface.name);
+                }
+            }
+            Ok(interfaces)
+        }
+        Err(err) => Err(err)
+    }
 }

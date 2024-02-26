@@ -7,7 +7,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import List, Optional, cast, Dict
 
 from .defs import (
     AF_ALG,
@@ -66,7 +66,7 @@ from .defs import (
     InterfaceName,
     InterfaceType,
 )
-from .netifaces import _ifaddresses, _interfaces
+from .netifaces import _ifaddresses, _interfaces, _interfaces_by_index
 
 __all__ = [
     "InterfaceType",
@@ -148,6 +148,16 @@ def interfaces(
     """
 
     return cast(List[InterfaceName], _interfaces(display.value))
+
+
+def interfaces_by_index() -> Dict[int, str]:
+    """
+    List the network interfaces by their index
+
+    :return the list of network interfaces on the machine, with the interface's Index mapped to its Name
+    """
+
+    return cast(Dict[int, str], _interfaces_by_index())
 
 
 def ifaddresses(if_name: str) -> Addresses:
