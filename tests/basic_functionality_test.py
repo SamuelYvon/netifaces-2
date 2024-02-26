@@ -41,6 +41,10 @@ def test_has_link_layer() -> None:
     assert has_any_link, "Test failure; no AF_PACKET address of any kind found"
 
 
+##@pytest.mark.skipif(platform.system() != "Windows", reason="Windows only")
+##def test_interface_display_formats
+
+
 def test_loopback_addr_is_returned() -> None:
     """
     Test that the loopback address is returned in the lists of addresses
@@ -54,7 +58,7 @@ def test_loopback_addr_is_returned() -> None:
         address_table = netifaces.ifaddresses(interface)
 
         if netifaces.AF_INET in address_table:
-            for ipv4_settings in address_table[netifaces.AF_INET]:
+            for ipv4_settings in address_table[netifaces.InterfaceType.AF_INET]:
                 print(
                     f"Loopback test: Considering iface {interface} IPv4 address "
                     f"{ipv4_settings['addr']}"
@@ -64,7 +68,7 @@ def test_loopback_addr_is_returned() -> None:
                     loopback_ipv4_found = True
 
         if netifaces.AF_INET6 in address_table:
-            for ipv6_settings in address_table[netifaces.AF_INET6]:
+            for ipv6_settings in address_table[netifaces.InterfaceType.AF_INET6]:
                 print(
                     f"Loopback test: Considering iface {interface} IPv6 address "
                     f"{ipv6_settings['addr']}"
@@ -87,5 +91,5 @@ def test_all_ifaces_have_ipv4() -> None:
     for interface in netifaces.interfaces():
         address_table = netifaces.ifaddresses(interface)
         if netifaces.AF_INET in address_table:
-            for ipv4_settings in address_table[netifaces.AF_INET]:
+            for ipv4_settings in address_table[netifaces.InterfaceType.AF_INET]:
                 assert ipv4_settings["addr"] != "0.0.0.0"

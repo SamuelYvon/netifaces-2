@@ -7,7 +7,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, cast, Dict
+from typing import Dict, List, Optional, cast
 
 from .defs import (
     AF_ALG,
@@ -124,6 +124,21 @@ __all__ = [
 
 
 class InterfaceDisplay(enum.Enum):
+    """
+    Enumeration for ways that interface names can be returned by interfaces()
+    and interfaces_by_index().
+
+    On Windows, there are several different interface name formats used by the
+    OS.  The so-called "name" is a machine-readable UUID, such as
+    '{E5993936-7D91-44DD-84FD-55D909FF2143}'.  The "description" gives the
+    human-readable name of the network adapter, such as 'Realtek PCIe GbE
+    Family Controller'.  This enum is used to select between the two.
+
+    On POSIX platforms, there is really only one format used for interface names:
+    the device name, e.g. "lo" or "eno1".  This format is always returned
+    regardless of the InterfaceDisplay value passed.
+    """
+
     HumanReadable = 0
     MachineReadable = 1
 
@@ -141,7 +156,7 @@ def interfaces(
     """
     List the network interfaces that are available
 
-    :param display: how to display the interface names.
+    :param display: Hint for how to display the interface names.
                     See the `InterfaceDisplay` enum for the values. By default,
                     human-readable.
     :return the list of network interfaces that are available
@@ -150,11 +165,18 @@ def interfaces(
     return cast(List[InterfaceName], _interfaces(display.value))
 
 
-def interfaces_by_index() -> Dict[int, InterfaceName]:
+def interfaces_by_index(
+    display: InterfaceDisplay = InterfaceDisplay.HumanReadable,
+) -> Dict[int, InterfaceName]:
     """
     List the network interfaces by their index
 
-    :return the list of network interfaces on the machine, with the interface's Index mapped to its Name
+    :param display: Hint for how to display the interface names.
+                    See the `InterfaceDisplay` enum for the values. By default,
+                    human-readable.
+
+    :return the list of network interfaces on the machine, with the
+        interface's Index mapped to its Name
     """
 
     return cast(Dict[int, str], _interfaces_by_index())

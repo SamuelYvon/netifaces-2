@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::common::InterfaceDisplay;
-use crate::{mac_to_string, types};
 use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, MASK_ADDR};
+use crate::{mac_to_string, types};
 use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap;
 use std::error::Error;
@@ -63,7 +63,6 @@ fn win_ip_addr_list_to_vec(ip: IP_ADDR_STRING) -> Vec<WinIpInfo> {
     let mut r = vec![];
 
     loop {
-
         let info = WinIpInfo {
             ip_address: win_adapter_name_to_string(&ip.IpAddress.String),
             mask: win_adapter_name_to_string(&ip.IpMask.String),
@@ -353,22 +352,23 @@ pub fn windows_interfaces(display: InterfaceDisplay) -> Result<Vec<String>, Box<
 }
 
 /// List all the network interfaces available on the system by their indexes
-pub fn windows_interfaces_by_index(display: InterfaceDisplay) -> Result<types::IfacesByIndex, Box<dyn std::error::Error>> {
+pub fn windows_interfaces_by_index(
+    display: InterfaceDisplay,
+) -> Result<types::IfacesByIndex, Box<dyn std::error::Error>> {
     let interfaces = win_explore_adapters();
 
     match interfaces {
         Ok(win_ifaces) => {
             let mut interfaces = types::IfacesByIndex::new();
             for win_iface in win_ifaces {
-                if display==InterfaceDisplay::HumanReadable {
+                if display == InterfaceDisplay::HumanReadable {
                     interfaces.insert(win_iface.index, win_iface.description);
-                }
-                else {
+                } else {
                     interfaces.insert(win_iface.index, win_iface.name);
                 }
             }
             Ok(interfaces)
         }
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }
