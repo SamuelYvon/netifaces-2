@@ -111,7 +111,6 @@ class InterfaceType(IntEnum):
     AF_MCTP = AF_MCTP
     AF_MAX = AF_MAX
     AF_LINK = AF_LINK
-    AF_INTERFACE_INDEX = AF_INTERFACE_INDEX
 
 
 InterfaceName = str
