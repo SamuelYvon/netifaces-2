@@ -68,7 +68,7 @@ fn win_ip_addr_list_to_vec(ip: IP_ADDR_STRING) -> Vec<WinIpInfo> {
             mask: win_adapter_name_to_string(&ip.IpMask.String),
         };
 
-        // In my testing, GetAdaptersInfo returns an IP of "0.0.0.0" when the interface
+        // In testing, GetAdaptersInfo returns an IP of "0.0.0.0" when the interface
         // is down and does not have an IP assigned.  So only include the IP if it's
         // not 0.0.0.0
         if info.ip_address != "0.0.0.0" {

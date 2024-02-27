@@ -30,10 +30,8 @@ pub fn posix_interfaces_by_index(
     let iface_names_idxes = if_nameindex()?;
 
     for iface in &iface_names_idxes {
-        interfaces.insert(
-            iface.index().try_into().unwrap(),
-            iface.name().to_string_lossy().to_string(),
-        );
+        let iface_index = iface.index() as usize;
+        interfaces.insert(iface_index, iface.name().to_string_lossy().to_string());
     }
 
     Ok(interfaces)
