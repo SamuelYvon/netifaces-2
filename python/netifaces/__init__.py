@@ -179,7 +179,7 @@ def interfaces_by_index(
         interface's Index mapped to its Name
     """
 
-    return cast(Dict[int, str], _interfaces_by_index())
+    return cast(Dict[int, str], _interfaces_by_index(display.value))
 
 
 def ifaddresses(if_name: str) -> Addresses:

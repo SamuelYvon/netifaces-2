@@ -1,4 +1,8 @@
+import platform
+import re
+
 import netifaces
+import pytest
 
 
 def test_interfaces_returns_something() -> None:
@@ -41,8 +45,30 @@ def test_has_link_layer() -> None:
     assert has_any_link, "Test failure; no AF_PACKET address of any kind found"
 
 
-##@pytest.mark.skipif(platform.system() != "Windows", reason="Windows only")
-##def test_interface_display_formats
+@pytest.mark.skipif(
+    platform.system() != "Windows", reason="Windows only"
+)  # type: ignore[misc]
+def test_interface_display_formats_windows() -> None:
+    """
+    Check that the InterfaceDisplay argument can be used to select between a UUID
+    and a human readable name
+    """
+
+    uuid_regex = r"{[-A-F0-9]+}"
+
+    # The machine readable interface should look like a UUID string
+    machine_readable_iface0 = netifaces.interfaces(
+        netifaces.InterfaceDisplay.MachineReadable
+    )[0]
+    print(f"Machine readable name of interface 0 is: {machine_readable_iface0}")
+    assert re.fullmatch(uuid_regex, machine_readable_iface0) is not None
+
+    # The human readable interface should NOT look like a UUID
+    human_readable_iface0 = netifaces.interfaces(
+        netifaces.InterfaceDisplay.HumanReadable
+    )[0]
+    print(f"Human readable name of interface 0 is: {human_readable_iface0}")
+    assert re.fullmatch(uuid_regex, human_readable_iface0) is None
 
 
 def test_loopback_addr_is_returned() -> None:

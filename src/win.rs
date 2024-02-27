@@ -361,11 +361,12 @@ pub fn windows_interfaces_by_index(
         Ok(win_ifaces) => {
             let mut interfaces = types::IfacesByIndex::new();
             for win_iface in win_ifaces {
-                if display == InterfaceDisplay::HumanReadable {
-                    interfaces.insert(win_iface.index, win_iface.description);
-                } else {
-                    interfaces.insert(win_iface.index, win_iface.name);
-                }
+                let value = match display {
+                    InterfaceDisplay::HumanReadable => win_iface.description,
+                    InterfaceDisplay::MachineReadable => win_iface.name,
+                };
+
+                interfaces.insert(win_iface.index, value);
             }
             Ok(interfaces)
         }
