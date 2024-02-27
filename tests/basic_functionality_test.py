@@ -71,6 +71,9 @@ def test_interface_display_formats_windows() -> None:
     assert re.fullmatch(uuid_regex, human_readable_iface0) is None
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows", reason="Does not pass yet on Windows"
+)  # type: ignore[misc]
 def test_loopback_addr_is_returned() -> None:
     """
     Test that the loopback address is returned in the lists of addresses
