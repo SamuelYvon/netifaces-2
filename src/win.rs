@@ -37,7 +37,7 @@ struct WinIface {
     name: String,
     /// The human-readable name of the interface
     description: String,
-    index: u32,
+    index: usize,
     ip_addresses: Vec<WinIpInfo>,
     mac_address: Vec<u8>,
 }
@@ -125,7 +125,7 @@ fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
             // We use the description as it's more useful than a uuid
             let name = win_adapter_name_to_string(&entry.AdapterName);
             let description = win_adapter_name_to_string(&entry.Description);
-            let index = entry.Index;
+            let index = entry.Index as usize;
 
             let ip_addresses = win_ip_addr_list_to_vec(entry.IpAddressList);
             let addr_len = entry.AddressLength as usize;
@@ -355,21 +355,17 @@ pub fn windows_interfaces(display: InterfaceDisplay) -> Result<Vec<String>, Box<
 pub fn windows_interfaces_by_index(
     display: InterfaceDisplay,
 ) -> Result<types::IfacesByIndex, Box<dyn std::error::Error>> {
-    let interfaces = win_explore_adapters();
+    let interfaces = win_explore_adapters()?;
 
-    match interfaces {
-        Ok(win_ifaces) => {
-            let mut interfaces = types::IfacesByIndex::new();
-            for win_iface in win_ifaces {
-                let value = match display {
-                    InterfaceDisplay::HumanReadable => win_iface.description,
-                    InterfaceDisplay::MachineReadable => win_iface.name,
-                };
+    let mut ifaces_by_index = types::IfacesByIndex::new();
+    for win_iface in interfaces {
+        let value = match display {
+            InterfaceDisplay::HumanReadable => win_iface.description,
+            InterfaceDisplay::MachineReadable => win_iface.name,
+        };
 
-                interfaces.insert(win_iface.index, value);
-            }
-            Ok(interfaces)
-        }
-        Err(err) => Err(err),
+        ifaces_by_index.insert(win_iface.index, value);
     }
+
+    Ok(ifaces_by_index)
 }
