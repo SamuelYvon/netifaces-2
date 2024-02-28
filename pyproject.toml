@@ -41,6 +41,7 @@ dev = [
 
 [tool.black]
 target-version = ["py311", "py310", "py39", "py38", "py37"]
+line-length = 120
 
 [tool.maturin]
 python-source = "python"
@@ -59,6 +60,7 @@ ignore_missing_imports = true
 [tool.ruff]
 src = ["netifaces"]
 target-version = "py37"
+line-length = 120
 select = [
     "B", # flake8-bugbear
     "C4", # flake8-comprehensions

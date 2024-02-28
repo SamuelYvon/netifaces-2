@@ -24,9 +24,7 @@ def routes_parse_ip_tool(ip_tool_path: str, old_api: bool = False) -> GatewaysTa
     ipv6_query = subprocess.run([ip_tool_path, "-6", "r"], capture_output=True)
 
     if ipv4_query.returncode != 0 or ipv6_query.returncode != 0:
-        raise RuntimeError(
-            "Cannot use the IP tool; although it is present on the system"
-        )
+        raise RuntimeError("Cannot use the IP tool; although it is present on the system")
 
     ipv4_lines = ipv4_query.stdout.decode("UTF-8").splitlines()
     ipv6_lines = ipv6_query.stdout.decode("UTF-8").splitlines()
@@ -62,9 +60,7 @@ def routes_parse_file(content: str, old_api: bool = False) -> GatewaysTable:
     lined = content.splitlines()
 
     if len(lined) == 0:
-        raise ValueError(
-            "Cannot generate the columns header; cannot understand the routes"
-        )
+        raise ValueError("Cannot generate the columns header; cannot understand the routes")
 
     columns = _safe_split(lined[0])
     entries = [_safe_split(line) for line in lined[1:]]
