@@ -12,7 +12,10 @@ mod types;
 mod linux;
 
 #[cfg(not(target_family = "windows"))]
-use linux::{linux_ifaddresses as ifaddresses, linux_interfaces as interfaces};
+use linux::{
+    posix_ifaddresses as ifaddresses, posix_interfaces as interfaces,
+    posix_interfaces_by_index as interfaces_by_index,
+};
 
 mod common;
 #[cfg(target_family = "windows")]
@@ -20,7 +23,10 @@ mod win;
 
 use crate::common::InterfaceDisplay;
 #[cfg(target_family = "windows")]
-use win::{windows_ifaddresses as ifaddresses, windows_interfaces as interfaces};
+use win::{
+    windows_ifaddresses as ifaddresses, windows_interfaces as interfaces,
+    windows_interfaces_by_index as interfaces_by_index,
+};
 
 /// Given an u32 in little endian, return the String representation
 /// of it into the colloquial IPV4 string format
@@ -72,6 +78,17 @@ fn _interfaces(interface_display: i32) -> PyResult<Vec<String>> {
 }
 
 #[pyfunction]
+fn _interfaces_by_index(interface_display: i32) -> PyResult<types::IfacesByIndex> {
+    let interface_display = InterfaceDisplay::try_from(interface_display)?;
+    let maybe_ifs = interfaces_by_index(interface_display);
+
+    maybe_ifs.map_err(|e| {
+        let str_message = e.to_string();
+        PyErr::new::<PyRuntimeError, _>(str_message)
+    })
+}
+
+#[pyfunction]
 fn _ifaddresses(if_name: &str) -> PyResult<types::IfAddrs> {
     let maybe_ifaddrs = ifaddresses(if_name);
 
@@ -84,6 +101,7 @@ fn _ifaddresses(if_name: &str) -> PyResult<types::IfAddrs> {
 #[pymodule]
 fn netifaces(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(_interfaces, m)?)?;
+    m.add_function(wrap_pyfunction!(_interfaces_by_index, m)?)?;
     m.add_function(wrap_pyfunction!(_ifaddresses, m)?)?;
     m.add_function(wrap_pyfunction!(_ip_to_string, m)?)?;
     Ok(())

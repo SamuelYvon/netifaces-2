@@ -57,6 +57,7 @@ AF_XDP = 44
 AF_MCTP = 45
 AF_MAX = 46
 AF_LINK = -1000  # Windows Link Layer as defined by netifaces(1)
+AF_INTERFACE_INDEX = -1001  # Magic value for the interface index
 
 
 class InterfaceType(IntEnum):

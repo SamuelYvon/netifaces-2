@@ -6,7 +6,6 @@ use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, WIN32_ERROR};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::NetworkManagement::IpHelper::IP_ADAPTER_INFO;
 
-
 fn adapter_info_size_required() -> Result<u32, WIN32_ERROR> {
     let mut size: u32 = 0;
     unsafe {
@@ -29,5 +28,7 @@ fn main() {
         }
     };
     let number_of_entries = (size as usize) / size_of::<IP_ADAPTER_INFO>();
-    println!("To get the adapter's table, {size} bytes are required, or {number_of_entries} structures.");
+    println!(
+        "To get the adapter's table, {size} bytes are required, or {number_of_entries} structures."
+    );
 }

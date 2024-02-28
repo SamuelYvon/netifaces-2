@@ -97,3 +97,23 @@ for systems with only Python 3.6 available.
 ## 5. License
 
 This software is distributed under a MIT license.
+
+## 6. Developing Locally
+
+To set up for local development, you will first need to install Rust from [rustup](https://rustup.rs/).
+
+It's then recommended to create a virtual environment and install the package plus its dependencies into it:
+```
+$ python3 -m venv venv
+$ source venv/bin/activate (or .\venv\Scripts\activate.ps1 with Windows Powershell)
+$ python3 -m pip install -e '.[dev]' # This internally runs the Rust compiler
+$ python3 -m pip install pre-commit
+$ source venv/bin/activate # Re-source the venv to pick up new scripts
+$ pre-commit install
+```
+
+To recompile the rust code after making changes, run:
+```
+$ python3 -m pip install -e .
+```
+again.

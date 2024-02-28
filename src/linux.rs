@@ -1,13 +1,14 @@
 use crate::common::InterfaceDisplay;
 use crate::types::{
-    AddrPairs, IfAddrs, ADDR_ADDR, AF_ALG, AF_INET, AF_INET6, AF_NETLINK, AF_PACKET, AF_VSOCK,
-    BROADCAST_ADDR, MASK_ADDR, PEER_ADDR,
+    AddrPairs, IfAddrs, IfacesByIndex, ADDR_ADDR, AF_ALG, AF_INET, AF_INET6, AF_NETLINK, AF_PACKET,
+    AF_VSOCK, BROADCAST_ADDR, MASK_ADDR, PEER_ADDR,
 };
 use nix::ifaddrs;
+use nix::net::if_::if_nameindex;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
-pub fn linux_interfaces(
+pub fn posix_interfaces(
     _display: InterfaceDisplay,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut s: HashSet<String> = HashSet::new();
@@ -19,6 +20,21 @@ pub fn linux_interfaces(
     }
 
     Ok(Vec::from_iter(s))
+}
+
+pub fn posix_interfaces_by_index(
+    _display: InterfaceDisplay,
+) -> Result<IfacesByIndex, Box<dyn std::error::Error>> {
+    let mut interfaces = IfacesByIndex::new();
+
+    let iface_names_idxes = if_nameindex()?;
+
+    for iface in &iface_names_idxes {
+        let iface_index = iface.index() as usize;
+        interfaces.insert(iface_index, iface.name().to_string_lossy().to_string());
+    }
+
+    Ok(interfaces)
 }
 
 fn add_to_types_mat(
@@ -39,7 +55,7 @@ fn add_to_types_mat(
     e[l - 1].insert(class.to_string(), format!("{addr}"));
 }
 
-pub fn linux_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
+pub fn posix_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
     let mut types_mat: HashMap<i32, Vec<AddrPairs>> = HashMap::new();
     let if_addrs = nix::ifaddrs::getifaddrs()?;
 
