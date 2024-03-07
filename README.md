@@ -76,8 +76,15 @@ to be platform independent. This has the nice effect of abstracting the OS when
 accessing the information of a network layer. However after consideration, it
 does not feel like the right place to provide abstraction. If you update your
 project's dependencies to this version of `netifaces`, be wary of this change.
-For instance, on linux you may need to replace `AF_LINK` with `AF_PACKET` to get
-mac addresses.
+
+Also note that in netifaces-2, the AF_ constants no longer share the same integer value
+as their equivalents from the `socket` module.  This means that code which uses the
+two sets of constants interchangeably may have to be updated.
+
+So that type annotations can help with this, netifaces provides the `netifaces.InterfaceType`
+enum for its own interface types.  All netifaces results are annotated using this type.
+You should use values like `netifaces.InterfaceType.AF_INET6` instead of `netifaces.AF_INET6`
+where possible so that a type checker can help catch issues with using the incorrect constants.
 
 In the future, an extra API will allow accessing a specific layer's information
 by querying for it, without using the platform's constant.

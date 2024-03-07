@@ -15,6 +15,24 @@ def test_interfaces_by_index_returns_same_interface_list() -> None:
     assert set(netifaces.interfaces_by_index().values()) == set(netifaces.interfaces())
 
 
+def test_can_lookup_by_either_name() -> None:
+    # Test that it's possible to look up the ifaddresses of an interface
+    # by either its machine readable or its human readable name
+
+    # Choose an arbitrary interface by its index.
+    # Use indices because the network interface list might not always be sorted the same between
+    # multiple calls.
+    ifaces_human_readable = netifaces.interfaces_by_index(netifaces.InterfaceDisplay.HumanReadable)
+    arbitrary_iface_idx = next(iter(ifaces_human_readable.keys()))
+
+    iface_human_readable = ifaces_human_readable[arbitrary_iface_idx]
+    iface_machine_readable = netifaces.interfaces_by_index(netifaces.InterfaceDisplay.MachineReadable)[
+        arbitrary_iface_idx
+    ]
+
+    assert netifaces.ifaddresses(iface_human_readable) == netifaces.ifaddresses(iface_machine_readable)
+
+
 def test_has_ipv4_or_ipv6() -> None:
     has_any_ip = False
 
@@ -65,7 +83,6 @@ def test_interface_display_formats_windows() -> None:
     assert re.fullmatch(uuid_regex, human_readable_iface0) is None
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="Does not pass yet on Windows")  # type: ignore[misc]
 def test_loopback_addr_is_returned() -> None:
     """
     Test that the loopback address is returned in the lists of addresses
