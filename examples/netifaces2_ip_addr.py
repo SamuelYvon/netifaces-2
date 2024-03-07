@@ -61,7 +61,7 @@ def print_ip_addr_entry(
 
     # Print peer address if it exists
     if "peer" in ip_addr_entry:
-        print(f" peer {ip_addr_entry['peer']}")
+        print(f" peer {ip_addr_entry['peer']}", end="")
 
     # If the netmask is available, compute the prefix.
     # Per here: https://serverfault.com/questions/998915/netmask-for-point-to-point-ip-address
@@ -78,7 +78,7 @@ def print_ip_addr_entry(
 
     # Print broadcast address if it exists
     if "broadcast" in ip_addr_entry:
-        print(f" brd {ip_addr_entry['broadcast']}")
+        print(f" brd {ip_addr_entry['broadcast']}", end="")
 
     print("")
 
@@ -96,7 +96,10 @@ def print_ifaces() -> None:
         # Print mac addresses
         if InterfaceType.AF_PACKET in addrs:
             for mac_addr_entry in addrs[InterfaceType.AF_PACKET]:
-                print(f"    link/ether {mac_addr_entry['addr']}")
+                print(f"    link/ether {mac_addr_entry['addr']}", end="")
+                if "broadcast" in mac_addr_entry:
+                    print(f" brd {mac_addr_entry['broadcast']}", end="")
+                print("")
 
         # Print IPv4 addresses
         if InterfaceType.AF_INET in addrs:

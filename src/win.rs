@@ -56,7 +56,7 @@ fn ifaddresses_mac(
             // format that we need to be compatible with netifaces.  So we have to do a bit
             // of string munging.
             let mac_str_hyphens = format!("{}", phys_addr);
-            let mac_str = mac_str_hyphens.replace("-", ":");
+            let mac_str = mac_str_hyphens.replace("-", ":").to_lowercase();
 
             let m = HashMap::from([(ADDR_ADDR.to_string(), mac_str)]);
             macs.push(m);
@@ -74,7 +74,7 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 
     let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
         get_adapters_addresses::Family::Unspec,
-        *get_adapters_addresses::Flags::default().include_prefix(),
+        get_adapters_addresses::Flags::default(), // Note: would really like to use include_prefix() here, but there's no way to get the prefix
     )?;
 
     // first find the interface, matching either the description or the name

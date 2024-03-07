@@ -19,9 +19,16 @@ def test_can_lookup_by_either_name() -> None:
     # Test that it's possible to look up the ifaddresses of an interface
     # by either its machine readable or its human readable name
 
-    # Choose an arbitrary interface
-    iface_human_readable = netifaces.interfaces(netifaces.InterfaceDisplay.HumanReadable)[0]
-    iface_machine_readable = netifaces.interfaces(netifaces.InterfaceDisplay.MachineReadable)[0]
+    # Choose an arbitrary interface by its index.
+    # Use indices because the network interface list might not always be sorted the same between
+    # multiple calls.
+    ifaces_human_readable = netifaces.interfaces_by_index(netifaces.InterfaceDisplay.HumanReadable)
+    arbitrary_iface_idx = next(iter(ifaces_human_readable.keys()))
+
+    iface_human_readable = ifaces_human_readable[arbitrary_iface_idx]
+    iface_machine_readable = netifaces.interfaces_by_index(netifaces.InterfaceDisplay.MachineReadable)[
+        arbitrary_iface_idx
+    ]
 
     assert netifaces.ifaddresses(iface_human_readable) == netifaces.ifaddresses(iface_machine_readable)
 
