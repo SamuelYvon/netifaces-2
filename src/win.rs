@@ -1,309 +1,69 @@
 #![allow(dead_code)]
 use crate::common::InterfaceDisplay;
-use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, MASK_ADDR};
-use crate::{mac_to_string, types};
-use std::alloc::{alloc, dealloc, Layout};
+use crate::types;
+use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, AF_INET6, AF_PACKET};
 use std::collections::HashMap;
 use std::error::Error;
-use std::ffi::{c_void, CStr};
-use std::mem::size_of;
-use std::net::Ipv6Addr;
-use std::ptr;
+use std::net::IpAddr;
 
-use windows::Win32::Foundation::{CHAR, ERROR_BUFFER_OVERFLOW, NO_ERROR, WIN32_ERROR};
-use windows::Win32::NetworkManagement::IpHelper;
-use windows::Win32::Networking::WinSock::{
-    inet_ntop, AF_INET6, INET6_ADDRSTRLEN, SOCKADDR_IN, SOCKADDR_IN6, SOCKET_ADDRESS,
-};
+use windows::core::HSTRING;
 
-use crate::common::NetifacesError;
-use windows::Win32::NetworkManagement::IpHelper::IP_ADDR_STRING;
-use windows::Win32::NetworkManagement::IpHelper::{
-    GetAdaptersAddresses, GET_ADAPTERS_ADDRESSES_FLAGS, IP_ADAPTER_ADDRESSES_LH, IP_ADAPTER_INFO,
-};
+use windows::Win32::NetworkManagement::IpHelper::GetAdapterIndex;
 
-const WIN_API_ALIGN: usize = 4;
-const AF_LINK: i32 = -1000;
+use get_adapters_addresses;
+use get_adapters_addresses::{Adapter, PhysicalAddress};
 
-#[derive(Debug)]
-struct WinIpInfo {
-    ip_address: String,
-    mask: String,
-}
-
-#[derive(Debug)]
-struct WinIface {
-    /// The windows name of the interface (some sort of UUID)
-    name: String,
-    /// The human-readable name of the interface
-    description: String,
-    index: usize,
-    ip_addresses: Vec<WinIpInfo>,
-    mac_address: Vec<u8>,
-}
-
-type Ipv6Endpoint = (Ipv6Addr, String);
-
-type Ipv6Mapping = HashMap<String, Vec<Ipv6Endpoint>>;
-
-fn win_adapter_name_to_string(arr: &[CHAR]) -> String {
-    let mut s = String::new();
-
-    for c in arr {
-        match c {
-            CHAR(0) => break,
-            CHAR(n) => s.push(unsafe { char::from_u32_unchecked(*n as u32) }),
-        }
-    }
-
-    s
-}
-
-fn win_ip_addr_list_to_vec(ip: IP_ADDR_STRING) -> Vec<WinIpInfo> {
-    let mut r = vec![];
-
-    loop {
-        let info = WinIpInfo {
-            ip_address: win_adapter_name_to_string(&ip.IpAddress.String),
-            mask: win_adapter_name_to_string(&ip.IpMask.String),
+fn ifaddresses_ip(
+    adapter: &Adapter,
+    if_addrs: &mut IfAddrs,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for unicast_addr in adapter.unicast_addresses() {
+        // Create entries based on type
+        let entry = match unicast_addr {
+            IpAddr::V4(_) => if_addrs.entry(AF_INET.into()),
+            IpAddr::V6(_) => if_addrs.entry(AF_INET6.into()),
         };
+        let addr_vec = entry.or_default();
 
-        // In testing, GetAdaptersInfo returns an IP of "0.0.0.0" when the interface
-        // is down and does not have an IP assigned.  So only include the IP if it's
-        // not 0.0.0.0
-        if info.ip_address != "0.0.0.0" {
-            r.push(info);
-        }
+        let addr_string = format!("{}", unicast_addr);
 
-        let x = ip.Next;
-        if x.is_null() {
-            break;
-        }
-    }
-    r
-}
+        // TODO currently get_adapters_addresses does not provide access to the
+        // prefix length :(, so we cannot report the netmask or broadcast address in the data on Windows.
+        // Per here: https://stackoverflow.com/a/64358443/7083698
+        // this information is available in the IP_ADAPTER_UNICAST_ADDRESS_LH.OnLinkPrefixLength
+        // struct field from Windows.
 
-/// Get the size (in bytes) required for allocating all the IP_ADAPTER_INFO
-/// structs. Might return an error in case it is unable to do so.
-fn adapter_info_size_required() -> Result<u32, NetifacesError> {
-    let mut size: u32 = 0;
-    unsafe {
-        let ret = WIN32_ERROR(IpHelper::GetAdaptersInfo(None, &mut size));
-        // Do not check for other return values; as per MS' docs, this will return an error code.
-        if ret != ERROR_BUFFER_OVERFLOW {
-            Err(NetifacesError::SystemErrorCode(
-                "IpHelper::GetAdaptersInfo(None, 0)".to_string(),
-                ret.0,
-            ))
-        } else {
-            Ok(size)
-        }
-    }
-}
-
-/// Return a vector of all windows interfaces detected by the system. This can be a fairly large
-/// amount. No filtering is done.
-fn win_explore_adapters() -> Result<Vec<WinIface>, Box<dyn std::error::Error>> {
-    let mut result_vec = vec![];
-
-    unsafe {
-        let mut size = adapter_info_size_required()?;
-        let number_of_entries = (size as usize) / size_of::<IP_ADAPTER_INFO>();
-
-        let layout = Layout::from_size_align(size as usize, WIN_API_ALIGN)?;
-        let ptr = alloc(layout) as *mut IP_ADAPTER_INFO;
-
-        if NO_ERROR != WIN32_ERROR(IpHelper::GetAdaptersInfo(Some(ptr), &mut size)) {
-            // TODO: get the error string
-            dealloc(ptr as *mut u8, layout);
-            panic!("Failed to access the adapter information table:");
-        }
-
-        for i in 0..number_of_entries {
-            let entry = *ptr.add(i);
-
-            // We use the description as it's more useful than a uuid
-            let name = win_adapter_name_to_string(&entry.AdapterName);
-            let description = win_adapter_name_to_string(&entry.Description);
-            let index = entry.Index as usize;
-
-            let ip_addresses = win_ip_addr_list_to_vec(entry.IpAddressList);
-            let addr_len = entry.AddressLength as usize;
-            let address = entry.Address;
-
-            let mac_address = address[..addr_len].to_vec();
-
-            result_vec.push(WinIface {
-                name,
-                description,
-                index,
-                ip_addresses,
-                mac_address,
-            });
-        }
-
-        dealloc(ptr as *mut u8, layout);
-    };
-
-    Ok(result_vec)
-}
-
-fn ifaddresses_ipv4(
-    interface: &WinIface,
-    if_addrs: &mut IfAddrs,
-) -> Result<(), Box<dyn std::error::Error>> {
-    for win_ip_info in interface.ip_addresses.iter() {
-        let ent = if_addrs.entry(AF_INET.into());
-        let addr_vec = ent.or_default();
-
-        // TODO: broadcast
-        // (
-        //     BROADCAST_ADDR.to_string(),
-        //     ip_to_string(be_to_le(broad_addr)),
-        // ),
-
-        addr_vec.push(HashMap::from([
-            (ADDR_ADDR.to_string(), win_ip_info.ip_address.clone()),
-            (MASK_ADDR.to_string(), win_ip_info.mask.clone()),
-        ]));
-    }
-
-    Ok(())
-}
-
-unsafe fn sockaddr_to_string(sock_addr: SOCKET_ADDRESS) -> String {
-    let lp_sock = sock_addr.lpSockaddr;
-    let sa_family = (*lp_sock).sa_family as u32;
-
-    let mut buff = [0_u8; INET6_ADDRSTRLEN as usize];
-    match sa_family {
-        // AF_INET
-        2 => {
-            let s = lp_sock as *mut SOCKADDR_IN;
-            let addr = ptr::addr_of!((*s).sin_addr) as *const c_void;
-            inet_ntop(AF_INET as i32, addr, &mut buff);
-        }
-        // AF_INET6
-        23 => {
-            let s = lp_sock as *mut SOCKADDR_IN6;
-            let addr = ptr::addr_of!((*s).sin6_addr) as *const c_void;
-            inet_ntop(AF_INET6.0 as i32, addr, &mut buff);
-        }
-        _ => {}
-    };
-
-    CStr::from_bytes_until_nul(&buff)
-        .unwrap()
-        .to_string_lossy()
-        .to_string()
-}
-
-/// Get the network adapters' address(es). Only returns Ipv6 information for now but could
-/// be extended for v4.
-unsafe fn adapters_addresses() -> Result<Ipv6Mapping, Box<dyn std::error::Error>> {
-    let af_type = AF_INET6;
-    let mut eps = HashMap::new();
-
-    let mut size = 0;
-
-    let flags = GET_ADAPTERS_ADDRESSES_FLAGS(0);
-
-    let ret = WIN32_ERROR(GetAdaptersAddresses(af_type, flags, None, None, &mut size));
-    if ERROR_BUFFER_OVERFLOW != ret {
-        Err(NetifacesError::SystemErrorCode(
-            "GetAdaptersAddresses::(None)".to_string(),
-            ret.0,
-        ))?;
-    }
-
-    let layout = Layout::from_size_align(size as usize, WIN_API_ALIGN)?;
-    let ptr = alloc(layout) as *mut IP_ADAPTER_ADDRESSES_LH;
-
-    let ret = WIN32_ERROR(GetAdaptersAddresses(
-        af_type,
-        flags,
-        None,
-        Some(ptr),
-        &mut size,
-    ));
-    if NO_ERROR != ret {
-        Err(NetifacesError::SystemErrorCode(
-            "GetAdaptersAddresses::(ptr)".to_string(),
-            ret.0,
-        ))?;
-    }
-
-    let mut traversal = ptr;
-    while !traversal.is_null() {
-        let name = (*traversal).Description.to_string().unwrap();
-        let phy = (*traversal).PhysicalAddress;
-        let phy_len = (*traversal).PhysicalAddressLength as usize;
-        let phy = Vec::from(&phy[..phy_len]);
-        let phy = mac_to_string(&phy);
-
-        let mut addr_ptr = (*traversal).FirstUnicastAddress;
-
-        while !addr_ptr.is_null() {
-            let sock_addr = (*addr_ptr).Address;
-            let addr_str = sockaddr_to_string(sock_addr);
-
-            let entry = eps.entry(name.clone()).or_insert(vec![]);
-
-            let addr = addr_str.parse::<Ipv6Addr>()?;
-            entry.push((addr, phy.clone()));
-
-            addr_ptr = (*addr_ptr).Next;
-        }
-
-        traversal = (*traversal).Next;
-    }
-
-    Ok(eps)
-}
-
-/// List the IPv6 addrs. of the machine
-fn ifaddresses_ipv6(
-    interface: &WinIface,
-    if_addrs: &mut IfAddrs,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let addrs_per_iface = unsafe { adapters_addresses() }?;
-
-    let addrs = match addrs_per_iface.get(&interface.description) {
-        Some(arr) => arr,
-        None => {
-            return Ok(());
-        }
-    };
-
-    for (ip, mask) in addrs {
-        let addr_vec = if_addrs.entry(types::AF_INET6 as i32).or_default();
-
-        addr_vec.push(HashMap::from([
-            (ADDR_ADDR.to_string(), ip.to_string()),
-            (MASK_ADDR.to_string(), mask.to_string()),
-        ]));
+        addr_vec.push(HashMap::from([(ADDR_ADDR.to_string(), addr_string)]));
     }
 
     Ok(())
 }
 
 fn ifaddresses_mac(
-    interface: &WinIface,
+    adapter: &Adapter,
     if_addrs: &mut IfAddrs,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let entry = if_addrs.entry(AF_LINK);
-    let macs = entry.or_default();
+    let phys_addr_option: Option<PhysicalAddress> = adapter.physical_address();
 
-    let m = HashMap::from([(ADDR_ADDR.to_string(), mac_to_string(&interface.mac_address))]);
-    macs.push(m);
+    // If a MAC address was found for the interface, add it to the if addrs
+    match phys_addr_option {
+        Some(phys_addr) => {
+            let entry = if_addrs.entry(AF_PACKET as i32);
+            let macs = entry.or_default();
 
-    Ok(())
-}
+            // Annoyingly, the get_adapters_addresses PhysicalAddress type does not implement
+            // array access to the bytes, and its string conversion does not produce the exact
+            // format that we need to be compatible with netifaces.  So we have to do a bit
+            // of string munging.
+            let mac_str_hyphens = format!("{}", phys_addr);
+            let mac_str = mac_str_hyphens.replace("-", ":");
 
-#[test]
-fn adapters() -> Result<(), Box<dyn Error>> {
-    let adapters = win_explore_adapters()?;
-    dbg!(adapters);
+            let m = HashMap::from([(ADDR_ADDR.to_string(), mac_str)]);
+            macs.push(m);
+        }
+        None => {}
+    }
+
     Ok(())
 }
 
@@ -312,10 +72,18 @@ fn adapters() -> Result<(), Box<dyn Error>> {
 pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::Error>> {
     let mut if_addrs: IfAddrs = HashMap::new();
 
-    let adapters = win_explore_adapters()?;
-    let search_result: Vec<WinIface> = adapters
+    let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
+        get_adapters_addresses::Family::Unspec,
+        *get_adapters_addresses::Flags::default().include_prefix(),
+    )?;
+
+    // first find the interface, matching either the description or the name
+    let search_result: Vec<Adapter> = adapter_addresses
         .into_iter()
-        .filter(|adapter| adapter.description == if_name)
+        .filter(|adapter| {
+            adapter.description().into_string().unwrap() == if_name
+                || adapter.adapter_name() == if_name
+        })
         .collect();
 
     if search_result.is_empty() {
@@ -328,8 +96,7 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 
     let interface = search_result.get(0).unwrap();
 
-    ifaddresses_ipv4(interface, &mut if_addrs)?;
-    ifaddresses_ipv6(interface, &mut if_addrs)?;
+    ifaddresses_ip(interface, &mut if_addrs)?;
     ifaddresses_mac(interface, &mut if_addrs)?;
 
     Ok(if_addrs)
@@ -341,30 +108,50 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 /// - `display`: an [InterfaceDisplay] that controls what ID is returned from the call to
 ///              identify the interface.
 pub fn windows_interfaces(display: InterfaceDisplay) -> Result<Vec<String>, Box<dyn Error>> {
-    win_explore_adapters().map(|vec| {
-        vec.into_iter()
-            .map(|win_iface| match display {
-                InterfaceDisplay::HumanReadable => win_iface.description,
-                InterfaceDisplay::MachineReadable => win_iface.name,
-            })
-            .collect()
-    })
+    let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
+        get_adapters_addresses::Family::Unspec,
+        *get_adapters_addresses::Flags::default().skip_multicast(),
+    )?;
+
+    let mut ifaces: Vec<String> = Vec::new();
+    for adapter in &adapter_addresses {
+        ifaces.push(match display {
+            InterfaceDisplay::HumanReadable => adapter.description().into_string().unwrap(),
+            InterfaceDisplay::MachineReadable => adapter.adapter_name(),
+        });
+    }
+
+    Ok(ifaces)
 }
 
 /// List all the network interfaces available on the system by their indexes
 pub fn windows_interfaces_by_index(
     display: InterfaceDisplay,
 ) -> Result<types::IfacesByIndex, Box<dyn std::error::Error>> {
-    let interfaces = win_explore_adapters()?;
+    let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
+        get_adapters_addresses::Family::Unspec,
+        *get_adapters_addresses::Flags::default().skip_multicast(),
+    )?;
 
     let mut ifaces_by_index = types::IfacesByIndex::new();
-    for win_iface in interfaces {
+    for adapter in &adapter_addresses {
         let value = match display {
-            InterfaceDisplay::HumanReadable => win_iface.description,
-            InterfaceDisplay::MachineReadable => win_iface.name,
+            InterfaceDisplay::HumanReadable => adapter.description().into_string().unwrap(),
+            InterfaceDisplay::MachineReadable => adapter.adapter_name(),
         };
 
-        ifaces_by_index.insert(win_iface.index, value);
+        // Sadly get_adapters_addresses does not implement a getter for the
+        // interface index, so we have to use the Win32 function to look up the adapter
+        // index by its name.
+        // I did create a feature request for this: https://gitlab.com/cratesio/get_adapters_addresses/-/issues/1
+        // so hopefully someday it will be added and we can remove this code.
+        let adapter_name = adapter.adapter_name();
+        let mut index: u32 = 0;
+        let full_adapter_name = format!("\\DEVICE\\TCPIP_{adapter_name}");
+        let full_adapter_name_hstring = &HSTRING::from(&full_adapter_name);
+        unsafe { GetAdapterIndex(full_adapter_name_hstring, &mut index) };
+
+        ifaces_by_index.insert(index as usize, value);
     }
 
     Ok(ifaces_by_index)

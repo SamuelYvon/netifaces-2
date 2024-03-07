@@ -56,8 +56,16 @@ AF_SMC = 43
 AF_XDP = 44
 AF_MCTP = 45
 AF_MAX = 46
-AF_LINK = -1000  # Windows Link Layer as defined by netifaces(1)
-AF_INTERFACE_INDEX = -1001  # Magic value for the interface index
+
+# Different OSs use different terms to refer to the MAC layer address -- some (Windows)
+# use AF_LINK only, some (Linux) use AF_PACKET only, and still others (Mac?) use
+# both.  On systems which have both, they aren't *exactly* the same thing, but they
+# are pretty close, and currently the POSIX rust layer only processes AF_PACKET anyway.
+# For that reason, we define AF_LINK as an alias of AF_PACKET.  This is likely best
+# for compatibility with old netifaces code, and is pretty similar to how
+# netifaces 1 does it:
+# https://github.com/al45tair/netifaces/blob/master/netifaces.c#L235
+AF_LINK = AF_PACKET
 
 
 class InterfaceType(IntEnum):
