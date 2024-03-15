@@ -74,12 +74,12 @@ their call to get the al45air-style keys back.
 In the previous version of `netifaces` the `AF_` constants' value were assigned
 to be platform independent. This has the nice effect of abstracting the OS when
 accessing the information of a network layer. However after consideration, it
-does not feel like the right place to provide abstraction. If you update your
-project's dependencies to this version of `netifaces`, be wary of this change.
+does not feel like the right place to provide abstraction.
 
-Also note that in netifaces-2, the AF_ constants no longer share the same integer value
+In netifaces-2, the AF_ constants no longer share the same integer value
 as their equivalents from the `socket` module.  This means that code which uses the
-two sets of constants interchangeably may have to be updated.
+two sets of constants interchangeably may have to be updated.  If you update your
+project's dependencies to this version of `netifaces`, be wary of this change.
 
 So that type annotations can help with this, netifaces provides the `netifaces.InterfaceType`
 enum for its own interface types.  All netifaces results are annotated using this type.

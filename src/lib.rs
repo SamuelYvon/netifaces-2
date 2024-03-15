@@ -4,6 +4,7 @@ extern crate core;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
+use std::fmt;
 use std::fmt::Write;
 
 mod types;
@@ -24,9 +25,20 @@ mod win;
 use crate::common::InterfaceDisplay;
 #[cfg(target_family = "windows")]
 use win::{
-    windows_ifaddresses as ifaddresses, windows_interfaces as interfaces,
-    windows_interfaces_by_index as interfaces_by_index,
+    windows_ifaddresses as ifaddresses, windows_interface_is_up as interface_is_up,
+    windows_interfaces as interfaces, windows_interfaces_by_index as interfaces_by_index,
 };
+
+#[derive(Debug)]
+pub struct NetifacesError(String);
+
+impl fmt::Display for NetifacesError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "netifaces error: {}", self.0)
+    }
+}
+
+impl std::error::Error for NetifacesError {}
 
 /// Given an u32 in little endian, return the String representation
 /// of it into the colloquial IPV4 string format

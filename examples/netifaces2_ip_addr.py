@@ -84,8 +84,9 @@ def print_ip_addr_entry(
 
 
 def print_ifaces() -> None:
-    # First, enumerate all the interfaces on the machine
-    sorted_ifaces = dict(sorted(netifaces.interfaces_by_index(netifaces.InterfaceDisplay.HumanReadable).items()))
+    # First, enumerate all the interfaces on the machine, sorted by index
+    all_ifaces = netifaces.interfaces_by_index(netifaces.InterfaceDisplay.HumanReadable)
+    sorted_ifaces = dict(sorted(all_ifaces.items()))
 
     for index, name in sorted_ifaces.items():
         up_down_string = "UP" if netifaces.interface_is_up(name) else "DOWN"
