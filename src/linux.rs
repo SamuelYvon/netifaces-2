@@ -7,6 +7,8 @@ use nix::ifaddrs;
 use nix::net::if_::if_nameindex;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::net::UdpSocket;
+use std::os::fd::AsRawFd;
 
 pub fn posix_interfaces(
     _display: InterfaceDisplay,
@@ -105,4 +107,71 @@ pub fn posix_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error::E
     }
 
     Ok(types_mat)
+}
+
+// Structures for using the SIOCGIFFLAGS ioctl.
+// See here for reference: https://man7.org/linux/man-pages/man7/netdevice.7.html
+// Original implementation from https://users.rust-lang.org/t/using-libc-ioctl-to-read-interface-flags/32506
+const IFNAMSIZ: usize = 16;
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+struct Ifmap {
+    pub mem_start: libc::c_ulong,
+    pub mem_end: libc::c_ulong,
+    pub base_addr: libc::c_ushort,
+    pub irq: libc::c_uchar,
+    pub dma: libc::c_uchar,
+    pub port: libc::c_uchar,
+}
+
+#[repr(C)]
+union IfReqPayload {
+    pub ifr_addr: libc::sockaddr,
+    pub ifr_dstaddr: libc::sockaddr,
+    pub ifr_broadaddr: libc::sockaddr,
+    pub ifr_netmask: libc::sockaddr,
+    pub ifr_hwaddr: libc::sockaddr,
+    pub ifr_flags: libc::c_short,
+    pub ifr_ifindex: libc::c_int,
+    pub ifr_metric: libc::c_int,
+    pub ifr_mtu: libc::c_int,
+    pub ifr_map: Ifmap,
+    pub ifr_slave: [libc::c_uchar; IFNAMSIZ],
+    pub ifr_newname: [libc::c_uchar; IFNAMSIZ],
+    pub ifr_data: *const libc::c_uchar,
+}
+
+#[repr(C)]
+struct IfReq {
+    pub ifr_name: [libc::c_uchar; IFNAMSIZ],
+    pub data_union: IfReqPayload,
+}
+
+/// Read the flags from an interface using the SIOCGIFFLAGS
+/// ioctl.
+fn read_interface_flags(if_name: &str) -> Result<libc::c_short, Box<dyn std::error::Error>> {
+    if if_name.len() >= IFNAMSIZ {
+        return Err("Interface name too long!".into());
+    }
+
+    // In order to use this IOCTL, we have to create a socket to use it on.
+    // Any socket will do; it apparently does not need to be bound to the interface
+    // in question.
+    let socket = UdpSocket::bind((std::net::Ipv4Addr::UNSPECIFIED, 0))?;
+
+    unsafe {
+        // Create a zeroed structure which will be used for the ioctl
+        let mut ifreq: IfReq = std::mem::zeroed();
+
+        // Copy in the name.
+        // We checked the length earlier so we know it will fit.
+        ifreq.ifr_name[0..if_name.as_bytes().len()].copy_from_slice(if_name.as_bytes());
+        ifreq.ifr_name[if_name.as_bytes().len()] = 0;
+
+        // Run ioctl
+        libc::ioctl(socket.as_raw_fd(), libc::SIOCGIFFLAGS, &ifreq);
+
+        Ok(ifreq.data_union.ifr_flags)
+    }
 }
