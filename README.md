@@ -89,6 +89,14 @@ where possible so that a type checker can help catch issues with using the incor
 In the future, an extra API will allow accessing a specific layer's information
 by querying for it, without using the platform's constant.
 
+### Interface Up/Down Status and IPv4 Addresses
+
+netifaces-2 adds a new function for detecting if an interface is up or down: `netifaces.interface_is_up()`.  You can pass it an interface name and it will return true iff that interface is able to pass traffic.
+
+This can come in handy when dealing with a specific quirk of the original netifaces: due to what is arguably a bug, it does not report the IPv4 addresses of interfaces which have static IPs, but are down.  So, code might try to iterate over all the IPv4 interfaces, assume that any interfaces which do have addresses are up, and try to do stuff on them.  This author found at least one such example in his own code.
+
+netifaces-2 prefers to provide IP address information as received from the OS without changes.  In practice, this means that on Linux, static IPv4 IPs will not be reported for interfaces that are down, while on Windows, they are.   IPv6 IPs are always reported regardless of the interface status.  This means that in your code, you should always check `interface_is_up()` before attempting to do anything with an interface.
+
 ## 4. Platform support
 
 ### Wheels

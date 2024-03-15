@@ -175,3 +175,13 @@ fn read_interface_flags(if_name: &str) -> Result<libc::c_short, Box<dyn std::err
         Ok(ifreq.data_union.ifr_flags)
     }
 }
+
+/// Get the status of an interface (up/down) on POSIX
+pub fn posix_interface_is_up(if_name: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    // Testing on Linux, it looks like the flag we want is IFF_RUNNING, not IFF_UP.
+    // IFF_UP is the "administrative" status, i.e. "ip link set <name> up/down".
+    // IFF_RUNNING only sets when the interface is both administratively up
+    // and can send data.
+    // Ref: https://stackoverflow.com/questions/11679514/what-is-the-difference-between-iff-up-and-iff-running
+    Ok((read_interface_flags(if_name)? & libc::IFF_RUNNING as libc::c_short) != 0)
+}
