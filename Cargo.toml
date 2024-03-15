@@ -9,8 +9,6 @@ name = "netifaces"
 crate-type = ["cdylib"]
 
 [dependencies]
-failure = "0.1.8"
-failure_derive = "0.1.8"
 log = "0.4.20"
 thiserror = "1.0.51"
 
