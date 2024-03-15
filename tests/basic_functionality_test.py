@@ -148,7 +148,7 @@ def test_loopback_is_up() -> None:
     assert netifaces.interface_is_up(loopback_if_name)
 
 
-def test_invalid_if_name() -> None:
+def test_ifaddresses_invalid_if_name() -> None:
     """
     Test that an invalid interface name passed to ifaddresses() is handled
     gracefully.
@@ -156,5 +156,17 @@ def test_invalid_if_name() -> None:
 
     with pytest.raises(Exception) as exception_info:
         netifaces.ifaddresses("arglebargle")
+
+    print("Got the following exception: " + str(exception_info))
+
+
+def test_is_up_invalid_if_name() -> None:
+    """
+    Test that an invalid interface name passed to interface_is_up() is handled
+    gracefully.
+    """
+
+    with pytest.raises(Exception) as exception_info:
+        netifaces.interface_is_up("arglebargle")
 
     print("Got the following exception: " + str(exception_info))

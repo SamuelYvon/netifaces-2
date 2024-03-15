@@ -170,7 +170,7 @@ fn read_interface_flags(if_name: &str) -> Result<libc::c_short, Box<dyn std::err
         ifreq.ifr_name[if_name.as_bytes().len()] = 0;
 
         // Run ioctl
-        libc::ioctl(socket.as_raw_fd(), libc::SIOCGIFFLAGS, &ifreq);
+        libc::ioctl(socket.as_raw_fd(), libc::SIOCGIFFLAGS.try_into()?, &ifreq);
 
         Ok(ifreq.data_union.ifr_flags)
     }
