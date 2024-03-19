@@ -32,3 +32,4 @@ features = ["extension-module", "abi3-py37"]
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.28.0", features = ["net"] }
+libc = "0.2"

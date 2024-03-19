@@ -1,5 +1,6 @@
 import platform
 import re
+from typing import Optional
 
 import netifaces
 import pytest
@@ -125,3 +126,47 @@ def test_all_ifaces_have_ipv4() -> None:
         if netifaces.AF_INET in address_table:
             for ipv4_settings in address_table[netifaces.InterfaceType.AF_INET]:
                 assert ipv4_settings["addr"] != "0.0.0.0"
+
+
+def test_loopback_is_up() -> None:
+    """
+    Basic test of interface_is_up().  We can't make assumptions about most interfaces
+    on the machine being up or down, but we can at least make sure that loopback is up.
+    """
+
+    loopback_if_name: Optional[str] = None
+
+    # Find name of the loopback interface
+    for interface in netifaces.interfaces():
+        address_table = netifaces.ifaddresses(interface)
+        if netifaces.AF_INET in address_table:
+            for ipv4_settings in address_table[netifaces.InterfaceType.AF_INET]:
+                if ipv4_settings["addr"] == "127.0.0.1":
+                    loopback_if_name = interface
+    assert loopback_if_name is not None
+
+    assert netifaces.interface_is_up(loopback_if_name)
+
+
+def test_ifaddresses_invalid_if_name() -> None:
+    """
+    Test that an invalid interface name passed to ifaddresses() is handled
+    gracefully.
+    """
+
+    with pytest.raises(Exception) as exception_info:
+        netifaces.ifaddresses("arglebargle")
+
+    print("Got the following exception: " + str(exception_info))
+
+
+def test_is_up_invalid_if_name() -> None:
+    """
+    Test that an invalid interface name passed to interface_is_up() is handled
+    gracefully.
+    """
+
+    with pytest.raises(Exception) as exception_info:
+        netifaces.interface_is_up("arglebargle")
+
+    print("Got the following exception: " + str(exception_info))

@@ -2,6 +2,7 @@
 use crate::common::InterfaceDisplay;
 use crate::types;
 use crate::types::{IfAddrs, ADDR_ADDR, AF_INET, AF_INET6, AF_PACKET};
+use crate::NetifacesError;
 use std::collections::HashMap;
 use std::error::Error;
 use std::net::IpAddr;
@@ -66,6 +67,36 @@ fn ifaddresses_mac(
 
     Ok(())
 }
+/// Find a given adapter in the list of adapters.
+/// Returns error if the interface is not found
+fn find_adapter<'a>(
+    adapters: &'a get_adapters_addresses::AdaptersAddresses,
+    if_name: &str,
+) -> Result<Adapter<'a>, Box<NetifacesError>> {
+    // first find the interface, matching either the description or the name
+    let mut search_results: Vec<Adapter> = adapters
+        .into_iter()
+        .filter(|adapter| {
+            adapter.description().into_string().unwrap() == if_name
+                || adapter.adapter_name() == if_name
+        })
+        .collect();
+
+    if search_results.len() > 1 {
+        let err_msg = format!("More than a single interface with description/name '{if_name}'");
+        return Err(Box::new(NetifacesError(err_msg)));
+    }
+
+    match search_results.get(0) {
+        // Note: Adapter is not copyable/cloneable, so we cannot call search_results.get()
+        // here.  Instead we have to use swap_remove.
+        Some(_) => Ok(search_results.swap_remove(0)),
+        None => {
+            let err_msg = format!("Cannot find any interface with description or name '{if_name}'");
+            Err(Box::new(NetifacesError(err_msg)))
+        }
+    }
+}
 
 /// Given an interface name, returns all the addresses associated with that interface. The result
 /// is shaped loosely in a map.
@@ -74,30 +105,17 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 
     let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
         get_adapters_addresses::Family::Unspec,
-        get_adapters_addresses::Flags::default(), // Note: would really like to use include_prefix() here, but there's no way to get the prefix
+        // Turn off stuff that we don't need in this call
+        // Note: would really like to use include_prefix() here, but there's no way to get the prefix
+        *get_adapters_addresses::Flags::default()
+            .skip_multicast()
+            .skip_dns_server(),
     )?;
 
-    // first find the interface, matching either the description or the name
-    let search_result: Vec<Adapter> = adapter_addresses
-        .into_iter()
-        .filter(|adapter| {
-            adapter.description().into_string().unwrap() == if_name
-                || adapter.adapter_name() == if_name
-        })
-        .collect();
+    let interface = find_adapter(&adapter_addresses, if_name)?;
 
-    if search_result.is_empty() {
-        Err(format!(
-            "Cannot find any interface with description {if_name}"
-        ))?
-    } else if search_result.len() > 1 {
-        panic!("More than a single interface with description {if_name}")
-    }
-
-    let interface = search_result.get(0).unwrap();
-
-    ifaddresses_ip(interface, &mut if_addrs)?;
-    ifaddresses_mac(interface, &mut if_addrs)?;
+    ifaddresses_ip(&interface, &mut if_addrs)?;
+    ifaddresses_mac(&interface, &mut if_addrs)?;
 
     Ok(if_addrs)
 }
@@ -110,7 +128,9 @@ pub fn windows_ifaddresses(if_name: &str) -> Result<IfAddrs, Box<dyn std::error:
 pub fn windows_interfaces(display: InterfaceDisplay) -> Result<Vec<String>, Box<dyn Error>> {
     let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
         get_adapters_addresses::Family::Unspec,
-        *get_adapters_addresses::Flags::default().skip_multicast(),
+        *get_adapters_addresses::Flags::default()
+            .skip_multicast()
+            .skip_dns_server(),
     )?;
 
     let mut ifaces: Vec<String> = Vec::new();
@@ -130,7 +150,9 @@ pub fn windows_interfaces_by_index(
 ) -> Result<types::IfacesByIndex, Box<dyn std::error::Error>> {
     let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
         get_adapters_addresses::Family::Unspec,
-        *get_adapters_addresses::Flags::default().skip_multicast(),
+        *get_adapters_addresses::Flags::default()
+            .skip_multicast()
+            .skip_dns_server(),
     )?;
 
     let mut ifaces_by_index = types::IfacesByIndex::new();
@@ -155,4 +177,23 @@ pub fn windows_interfaces_by_index(
     }
 
     Ok(ifaces_by_index)
+}
+
+/// Given an interface name, checks if the interface is up or not.
+pub fn windows_interface_is_up(if_name: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    let adapter_addresses = get_adapters_addresses::AdaptersAddresses::try_new(
+        get_adapters_addresses::Family::Unspec,
+        *get_adapters_addresses::Flags::default()
+            .skip_multicast()
+            .skip_dns_server()
+            .skip_anycast()
+            .skip_unicast(),
+    )?;
+
+    let interface = find_adapter(&adapter_addresses, if_name)?;
+
+    match interface.operational_status() {
+        get_adapters_addresses::OperStatus::Up => Ok(true),
+        _ => Ok(false),
+    }
 }
