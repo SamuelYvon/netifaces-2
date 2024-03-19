@@ -93,9 +93,11 @@ by querying for it, without using the platform's constant.
 
 netifaces-2 adds a new function for detecting if an interface is up or down: `netifaces.interface_is_up()`.  You can pass it an interface name and it will return true iff that interface is able to pass traffic.
 
-This can come in handy when dealing with a specific quirk of the original netifaces: due to what is arguably a bug, it does not report the IPv4 addresses of interfaces which have static IPs, but are down.  So, code might try to iterate over all the IPv4 interfaces, assume that any interfaces which do have addresses are up, and try to do stuff on them.  This author found at least one such example in his own code.
+This can come in handy when dealing with a specific quirk of the original netifaces: due to what is arguably a bug, it does not report the IPv4 addresses of interfaces which have static IPs, but are down on Windows.  So, code might try to iterate over all the IPv4 interfaces, assume that any interfaces which do have addresses are up, and try to do stuff on them.  This author found at least one such example in his own code.
 
-netifaces-2 prefers to provide IP address information as received from the OS without changes.  In practice, this means that on Linux, static IPv4 IPs will not be reported for interfaces that are down, while on Windows, they are.   IPv6 IPs are always reported regardless of the interface status.  This means that in your code, you should always check `interface_is_up()` before attempting to do anything with an interface.
+netifaces-2 prefers to provide IP address information as received from the OS without changes.  In practice, this means that on Linux/Mac, static IPv4 IPs will not be reported for interfaces that are down, while on Windows, they are.   IPv6 IPs are always reported regardless of the interface status.  This means that in your code, you should always check `interface_is_up()` before attempting to do anything with an interface.
+
+For extra fun, on MacOS, the OS has a nasty habit of reporting that interfaces are up when they actually aren't.  It appears that it sets the IFF_RUNNING flag even when a cable is not plugged into an Ethernet interface, and there aren't any other flags we're aware of that can produce more correct information.  And this isn't a netifaces-specific issue either -- the OS's own ifconfig tool also reports these interfaces as RUNNING even when they are disconnected.  For maximum portability, the best way to detect if an interface is usable appears to be to ensure that interface_is_up() returns true AND that the interface has IP addresses assigned to it.
 
 ## 4. Platform support
 
