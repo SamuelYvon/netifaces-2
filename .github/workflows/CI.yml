@@ -33,11 +33,11 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: |
-          3.7
           3.8
           3.9
           3.10
           3.11
+          3.12
     - name: Test wheels
       run: |
         pip install nox
@@ -88,31 +88,6 @@ jobs:
         name: wheels
         path: dist
 
-  linux-legacy:
-    name: Build Linux legacy wheels
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        target: [x86_64, s390x, ppc64le, aarch64]
-    steps:
-    - uses: actions/checkout@v3
-    # TODO: Figure out a smarter way to do this
-    - run: sed -e "s/requires-python = \">=3.7\"/requires-python = \">=3.6\"/g" -i pyproject.toml
-    - run: sed -e "s/, \"abi3-py37\"//g" -i Cargo.toml
-    - run: sed -e "s/0.17.1/0.15.2/g" -i Cargo.toml
-    - uses: messense/maturin-action@v1
-      with:
-        maturin-version: v0.12.20
-        manylinux: 2_17
-        target: ${{ matrix.target }}
-        command: build
-        args: --release -o dist -i python3.6
-    - name: Upload wheels
-      uses: actions/upload-artifact@v3
-      with:
-        name: wheels
-        path: dist
-
   windows:
     name: Build Windows wheels
     runs-on: windows-latest
@@ -125,11 +100,11 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: |
-          3.7
           3.8
           3.9
           3.10
           3.11
+          3.12
     - name: Test wheels
       run: |
         pip install nox
@@ -152,11 +127,11 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: |
-          3.7
           3.8
           3.9
           3.10
           3.11
+          3.12
     - name: Test wheels
       run: |
         pip install nox
