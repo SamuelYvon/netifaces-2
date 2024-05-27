@@ -66,7 +66,7 @@ from .defs import (
     InterfaceName,
     InterfaceType,
 )
-from .netifaces import _ifaddresses, _interfaces, _interfaces_by_index
+from .netifaces import _ifaddresses, _interface_is_up, _interfaces, _interfaces_by_index
 
 __all__ = [
     "InterfaceType",
@@ -236,7 +236,7 @@ def default_gateway(old_api: bool = False) -> DefaultGatewayEntry:
     """
     Get the default gateway for each interface type
 
-    :return the default gateway indexed by each interface type
+    :return: the default gateway indexed by each interface type
     """
 
     default_table: DefaultGatewayEntry = {}
@@ -247,3 +247,18 @@ def default_gateway(old_api: bool = False) -> DefaultGatewayEntry:
                 default_table.update({if_type: (gateway_ip, if_name)})
 
     return default_table
+
+
+def interface_is_up(if_name: str) -> bool:
+    """
+    Get whether a given interface is up and can transfer packets.
+
+    Note that on POSIX, this function returning true means that the interface is
+    both "administratively up", i.e. "ip link set <name> up/down", and that it actually
+    has a network cable plugged in.  The flag checked by netifaces corresponds to the
+    "RUNNING" status shown in ipconfig.
+
+    :return: True if the interface is up, false otherwise.
+    """
+
+    return cast(bool, _interface_is_up(if_name))

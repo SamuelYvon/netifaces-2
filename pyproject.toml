@@ -71,6 +71,9 @@ select = [
     "I", # isort
     "PT", # flake8-pytest-style
 ]
+ignore = [
+    "PT011" # pytest.Raises too broad
+]
 
 [tool.coverage.report]
 omit = ["_test.py"]

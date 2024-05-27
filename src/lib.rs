@@ -4,6 +4,7 @@ extern crate core;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
+use std::fmt;
 use std::fmt::Write;
 
 mod types;
@@ -13,8 +14,8 @@ mod linux;
 
 #[cfg(not(target_family = "windows"))]
 use linux::{
-    posix_ifaddresses as ifaddresses, posix_interfaces as interfaces,
-    posix_interfaces_by_index as interfaces_by_index,
+    posix_ifaddresses as ifaddresses, posix_interface_is_up as interface_is_up,
+    posix_interfaces as interfaces, posix_interfaces_by_index as interfaces_by_index,
 };
 
 mod common;
@@ -24,9 +25,20 @@ mod win;
 use crate::common::InterfaceDisplay;
 #[cfg(target_family = "windows")]
 use win::{
-    windows_ifaddresses as ifaddresses, windows_interfaces as interfaces,
-    windows_interfaces_by_index as interfaces_by_index,
+    windows_ifaddresses as ifaddresses, windows_interface_is_up as interface_is_up,
+    windows_interfaces as interfaces, windows_interfaces_by_index as interfaces_by_index,
 };
+
+#[derive(Debug)]
+pub struct NetifacesError(String);
+
+impl fmt::Display for NetifacesError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "netifaces error: {}", self.0)
+    }
+}
+
+impl std::error::Error for NetifacesError {}
 
 /// Given an u32 in little endian, return the String representation
 /// of it into the colloquial IPV4 string format
@@ -98,11 +110,22 @@ fn _ifaddresses(if_name: &str) -> PyResult<types::IfAddrs> {
     })
 }
 
+#[pyfunction]
+fn _interface_is_up(if_name: &str) -> PyResult<bool> {
+    let maybe_if_status = interface_is_up(if_name);
+
+    maybe_if_status.map_err(|e| {
+        let str_message = e.to_string();
+        PyErr::new::<PyRuntimeError, _>(str_message)
+    })
+}
+
 #[pymodule]
 fn netifaces(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(_interfaces, m)?)?;
     m.add_function(wrap_pyfunction!(_interfaces_by_index, m)?)?;
     m.add_function(wrap_pyfunction!(_ifaddresses, m)?)?;
     m.add_function(wrap_pyfunction!(_ip_to_string, m)?)?;
+    m.add_function(wrap_pyfunction!(_interface_is_up, m)?)?;
     Ok(())
 }
