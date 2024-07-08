@@ -2,7 +2,7 @@
 
 ## 1. What is this?
 
-The original [netifaces](https://github.com/al45tair/netifaces) was abandonned by it's maintainer,
+The original [netifaces](https://github.com/al45tair/netifaces) was abandoned by it's maintainer,
 leaving us without the option to get network addresses of any kind in Python. Unfortunately, the
 original sources are more akin to arcane magic, so picking where it's been left off is a difficult
 task.
@@ -11,7 +11,7 @@ I decided to rewrite `netifaces`, keeping the **almost** exact same API and addi
 
 - Support for future python versions
 - Type annotations
-- Maybe a more "queriable" API in the future
+- Maybe a more "queryable" API in the future
 
 This project aims to be a drop-in replacement for those project who use `netifaces`, but I do not
 guarantee anything.
@@ -38,7 +38,7 @@ Import:
     ...
 >>> netifaces.ifaddresses('en0')
     ...
->>> netifacs.gateways()
+>>> netifaces.gateways()
     ...
 ```
 
@@ -58,7 +58,7 @@ the following is exposed:
 The result will be the default gateway for each interface type. The result may
 be an empty dict if no default route is set.
 
-The level of completness differs a little bit with the original version; some
+The level of completeness differs a little bit with the original version; some
 address families might not yet be available and `PEER` addresses are not
 reported for now. If you need a feature, open an issue and I will do my best to
 add it.
@@ -106,7 +106,7 @@ Building Linux, Windows and macOS cp37-abi3 wheels (requires Python 3.7 and newe
 Install using pip:  
 `python -m pip install netifaces2`
 
-#### Linux  
+#### Linux
 Linux cp37-abi3 wheels are built on manylinux2_17 aka manylinux2014 and require pip>=19.3  
 cp36m-manylinux2_17 wheels are unsupported and are being built only as a fallback
 for systems with only Python 3.6 available.
